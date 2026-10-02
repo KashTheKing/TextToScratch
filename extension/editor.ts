@@ -1,9 +1,9 @@
 // TextToScratch editor: Monaco + in-browser compiler. Runs standalone or embedded (iframe) in the Scratch editor.
 import { build, emptyProject, IMAGE_EXT, readSb3, Sb3, SOUND_EXT, sourcesOf, typesFor, writeSb3, Diag } from "../src/compiler";
 
-declare const __ES5__: string, __SCRATCH__: string, __WORKERS__: Record<string, string>;
+declare const __ES5__: string, __SCRATCH__: string, __WORKERS__: Record<string, string>, __ENGINE__: Record<string, string>;
 declare const require: any;
-const libs = { es5: __ES5__, scratch: __SCRATCH__ };
+const libs = { es5: __ES5__, scratch: __SCRATCH__, engine: __ENGINE__ };
 const embedded = window.parent !== window;
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 
@@ -257,9 +257,12 @@ function boot() {
     ts.typescriptDefaults.setCompilerOptions({
       target: ts.ScriptTarget.ES5, lib: ["lib.es5.d.ts"], // raw option: file name, not the tsconfig alias strict: true, noEmit: true, moduleDetection: 3,
       module: ts.ModuleKind.ESNext, moduleResolution: 100, allowNonTsExtensions: true, types: [],
+      baseUrl: "file:///", paths: { "tts/*": ["engine/*"] },
     });
     ts.typescriptDefaults.setEagerModelSync(true);
     ts.typescriptDefaults.addExtraLib(libs.scratch, "file:///scratch.d.ts");
+    // the engine: `import * as Physics from "tts/physics"`
+    for (const [f, src] of Object.entries(libs.engine)) monaco.editor.createModel(src, "typescript", monaco.Uri.parse("file:///engine/" + f));
     defineTheme();
     editor = monaco.editor.create($("monaco"), {
       theme: "scratch", automaticLayout: true, fontSize: 14, minimap: { enabled: false },

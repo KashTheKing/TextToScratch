@@ -3,9 +3,11 @@ import fs from "node:fs";
 import path from "node:path";
 import { build, emptyProject, IMAGE_EXT, readSb3, SOUND_EXT, writeSb3, Libs } from "./compiler";
 
+const ENGINE_DIR = path.join(__dirname, "..", "lib", "engine");
 const libs = (): Libs => ({
   es5: fs.readFileSync(require.resolve("typescript/lib/lib.es5.d.ts"), "utf8"),
   scratch: fs.readFileSync(path.join(__dirname, "..", "lib", "scratch.d.ts"), "utf8"),
+  engine: Object.fromEntries(fs.readdirSync(ENGINE_DIR).filter((f) => f.endsWith(".ts")).map((f) => [f, fs.readFileSync(path.join(ENGINE_DIR, f), "utf8")])),
 });
 
 const STAGE = `// The stage. Exported state objects are global: every sprite can read and change them.
@@ -33,7 +35,10 @@ whenClicked(() => {
   say(\`Score: \${game.score}\`);
 });
 `;
-const TSCONFIG = { compilerOptions: { strict: true, noEmit: true, target: "ES5", lib: ["ES5"], types: [], moduleDetection: "force", module: "ESNext", moduleResolution: "Bundler" }, include: ["src", ".tts"] };
+const TSCONFIG = {
+  compilerOptions: { strict: true, noEmit: true, target: "ES5", lib: ["ES5"], types: [], moduleDetection: "force", module: "ESNext", moduleResolution: "Bundler", baseUrl: ".", paths: { "tts/*": [".tts/engine/*"] } },
+  include: ["src", ".tts"],
+};
 
 function init(dir: string) {
   fs.mkdirSync(path.join(dir, "src"), { recursive: true });
@@ -51,6 +56,11 @@ async function buildDir(dir: string, out?: string) {
   const images: Record<string, Uint8Array> = {};
   for (const e of fs.readdirSync(src, { withFileTypes: true })) {
     if (e.isFile() && e.name.endsWith(".ts")) sources[e.name] = fs.readFileSync(path.join(src, e.name), "utf8");
+    // src/lib/*.ts: shared code any sprite can import
+    if (e.isDirectory() && e.name === "lib") {
+      for (const f of fs.readdirSync(path.join(src, "lib"))) if (f.endsWith(".ts")) sources[`lib/${f}`] = fs.readFileSync(path.join(src, "lib", f), "utf8");
+      continue;
+    }
     if (e.isDirectory())
       for (const f of fs.readdirSync(path.join(src, e.name)))
         if ([...IMAGE_EXT, ...SOUND_EXT].includes(f.split(".").pop()!.toLowerCase())) images[`${e.name}/${f}`] = fs.readFileSync(path.join(src, e.name, f));
@@ -63,6 +73,8 @@ async function buildDir(dir: string, out?: string) {
   fs.mkdirSync(path.join(dir, ".tts"), { recursive: true });
   fs.writeFileSync(path.join(dir, ".tts", "scratch.d.ts"), L.scratch);
   fs.writeFileSync(path.join(dir, ".tts", "sprites.d.ts"), res.types);
+  fs.mkdirSync(path.join(dir, ".tts", "engine"), { recursive: true });
+  for (const [f, s] of Object.entries(L.engine!)) fs.writeFileSync(path.join(dir, ".tts", "engine", f), s);
 
   for (const d of res.diagnostics) console.error(`${path.join(dir, d.file.replace(/^\//, ""))}:${d.line}:${d.col} - error: ${d.message}`);
   if (!res.sb3) return false;

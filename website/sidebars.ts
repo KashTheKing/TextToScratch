@@ -6,6 +6,12 @@ const sidebars: SidebarsConfig = {
     "install",
     "platformer",
     { type: "category", label: "Language", collapsed: false, items: ["language", "reference", "differences"] },
+    {
+      type: "category",
+      label: "Game engine",
+      collapsed: false,
+      items: ["engine/overview", "engine/classes", "engine/2d", "engine/3d", "engine/multiplayer", "engine/utilities"],
+    },
     "cli",
   ],
 };

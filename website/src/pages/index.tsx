@@ -29,7 +29,7 @@ const FEATURES: { color: string; title: string; text: string }[] = [
   { color: "#4c97ff", title: "Real types", text: "Checked by the actual TypeScript compiler. Misspell a costume, sprite or sound name and you get an error before anything runs." },
   { color: "#9966ff", title: "Real Scratch", text: "The output is an ordinary Scratch project made of ordinary blocks. Open it, play it, share it, remix it." },
   { color: "#ffab19", title: "Code inside Scratch", text: "The browser extension adds a code editor right inside the Scratch editor. Draw in Scratch, code in text, press Build & Run." },
-  { color: "#59c059", title: "Whole games", text: "Variables, lists, clones, broadcasts, custom blocks with return values, pen. Everything you need to finish a game without a single drag and drop." },
+  { color: "#59c059", title: "A game engine", text: "Physics, collisions, scrolling cameras, animations, classes, pen-drawn 3D and online multiplayer, built in. Everything you need to finish a game without a single drag and drop." },
 ];
 
 export default function Home(): ReactNode {

@@ -43,6 +43,11 @@ function moveY(dy: number) {
     while (touching("Level")) me.y += back;
     if (dy < 0) onGround = true;
     vy = 0;
+  } else if (dy <= 0) {
+    // pushing out in whole pixels can leave a sub-pixel gap: probe 1px down so idling never flickers to "jump"
+    me.y -= 1;
+    if (touching("Level")) onGround = true;
+    me.y += 1;
   }
 }
 

@@ -11,7 +11,7 @@
   ],
   "scripts": {
     "build": "node scripts/build.mjs",
-    "test": "tsx --test test/compiler.test.ts",
+    "test": "tsx --test test/compiler.test.ts test/engine.test.ts",
     "typecheck": "tsc -p .",
     "dev": "node scripts/serve.mjs",
     "tts": "tsx src/cli.ts"

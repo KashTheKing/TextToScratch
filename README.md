@@ -134,7 +134,42 @@ These follow Scratch's behavior:
 - **At most one value-returning function call per statement.** Split `f(a) + f(b)` into two variables.
 - **`==` is case-insensitive** and compares numbers numerically, like Scratch's `=` block.
 - **`%` takes the sign of the divisor**, and trig functions use degrees.
-- **Functions are per sprite.** To trigger code in another sprite, use `broadcast`.
+- **Functions are per sprite.** Share code through `src/lib/` or the engine (copied into each sprite that uses it); to trigger code in another sprite, use `broadcast`.
+- **Objects are created at build time:** `new` only at the top level of a file, and constructors may only assign constants. Clones each get their own copy.
+
+## Game engine
+
+Import engine modules from `tts/*`; only what you use ends up in the project.
+
+```ts
+import * as Physics from "tts/physics";
+import * as Input from "tts/input";
+import * as Anim from "tts/anim";
+
+whenFlag(() => {
+  Physics.configure(0.8, 0.8, 15);
+  forever(() => {
+    Physics.push(Input.axisX() * 1.2, 0);
+    if (Input.jumpPressed()) Physics.jump(12);
+    Physics.step("Level");
+    if (Math.abs(Physics.vx) > 1) Anim.play("walk", 2, 8);
+    else Anim.show("idle");
+  });
+});
+```
+
+| Module | |
+|---|---|
+| `tts/physics` | gravity, friction, pixel-perfect platformer / top-down collision |
+| `tts/input` | axes, pressed-this-frame keys, mouse clicks |
+| `tts/camera` | scrolling worlds, follow, shake, zoom, tiled levels |
+| `tts/anim` | costume animations, as calls or `Animation` objects |
+| `tts/3d` | perspective projection, pen wireframes, filled triangles, 3D sprites |
+| `tts/net` | online multiplayer over cloud variables (6 players + messages) |
+| `tts/math`, `tts/data`, `tts/time`, `tts/scene`, `tts/draw`, `tts/particles` | utilities |
+
+Classes (`class Enemy { ... }` with fields, methods, constructors and `extends`) work in sprites, `src/lib/` and the engine.
+Demos: `examples/engine-demo` (Sky Run), `examples/3d-demo`, `examples/multiplayer`. Full docs: https://kashtheking.com/text-to-scratch/docs/engine
 
 ## Development
 
@@ -156,4 +191,6 @@ npm run typecheck
 | `src/compiler/index.ts` | type checking, project assembly, image costumes |
 | `src/compiler/project.ts` | sb3 zip I/O, md5, image sizes |
 | `extension/` | MV3 extension: `bridge.js` (finds the VM), `content.js` (menu item and overlay), `editor.*` (Monaco editor) |
-| `examples/catcher` | a complete example game |
+| `lib/engine/` | the game engine (`tts/*` modules), written in TextToScratch |
+| `examples/` | example games: catcher, platformer, engine-demo, 3d-demo, multiplayer |
+| `test/player.html`, `test/multiplayer.html` | play an sb3 with the real renderer; two clients over a fake cloud server |

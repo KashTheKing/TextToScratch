@@ -1,0 +1,22 @@
+<!doctype html>
+<!-- Two Scratch VMs sharing cloud variables through an in-page fake cloud server: tests tts/net multiplayer.
+     Usage: /test/multiplayer.html?project=/test/fixtures/multiplayer.sb3 -->
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>TextToScratch multiplayer harness</title>
+  <style>
+    body { margin: 0; background: #e5f0ff; font-family: Helvetica, Arial, sans-serif; display: flex; gap: 12px; padding: 8px; justify-content: center; }
+    figure { margin: 0; text-align: center; color: #575e75; font-weight: bold; }
+    canvas { width: 480px; height: 360px; border: 1px solid #ccc; border-radius: 8px; background: #fff; display: block; }
+  </style>
+</head>
+<body>
+  <figure><canvas id="c0" width="480" height="360"></canvas><figcaption>Client A</figcaption></figure>
+  <figure><canvas id="c1" width="480" height="360"></canvas><figcaption>Client B</figcaption></figure>
+  <script src="/node_modules/scratch-vm/dist/web/scratch-vm.js"></script>
+  <script src="/node_modules/scratch-render/dist/web/scratch-render.js"></script>
+  <script src="/node_modules/scratch-storage/dist/web/scratch-storage.js"></script>
+  <script src="/test/multiplayer.js"></script>
+</body>
+</html>

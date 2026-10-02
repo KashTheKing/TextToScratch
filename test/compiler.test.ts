@@ -1,38 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import fs from "node:fs";
-import path from "node:path";
 import { build, emptyProject, sourcesOf, writeSb3 } from "../src/compiler";
-
-const VM = require("scratch-vm");
-const libs = {
-  es5: fs.readFileSync(require.resolve("typescript/lib/lib.es5.d.ts"), "utf8"),
-  scratch: fs.readFileSync(path.join(__dirname, "..", "lib", "scratch.d.ts"), "utf8"),
-};
-
-function compile(sources: Record<string, string>) {
-  const res = build({ sources, base: emptyProject() }, libs);
-  return res;
-}
-
-/** Compile, load into a headless VM, click the green flag and run `frames` steps. */
-async function run(sources: Record<string, string>, frames = 30) {
-  const res = compile(sources);
-  assert.deepEqual(res.diagnostics, [], JSON.stringify(res.diagnostics, null, 1));
-  const vm = new VM();
-  await vm.loadProject(Buffer.from(await writeSb3(res.sb3!)));
-  vm.runtime.currentStepTime = 1000 / 30; // normally set by vm.start()
-  vm.greenFlag();
-  for (let i = 0; i < frames; i++) vm.runtime._step();
-  const stage = vm.runtime.getTargetForStage();
-  const lookup = (target: any, name: string) => Object.values(target.variables).find((v: any) => v.name === name) as any;
-  return {
-    vm,
-    g: (name: string) => lookup(stage, name)?.value,
-    sprite: (name: string) => vm.runtime.getSpriteTargetByName(name),
-    local: (sprite: string, name: string) => lookup(vm.runtime.getSpriteTargetByName(sprite), name)?.value,
-  };
-}
+import { compile, libs, run, VM } from "./helpers";
 
 test("arithmetic, strings, ternary, Math", async () => {
   const r = await run({
@@ -168,6 +137,28 @@ test("large sources are split into comments Scratch accepts, and read back", asy
   assert.deepEqual(sourcesOf(res.sb3!.json), { "Stage.ts": big });
   const vm = new VM();
   await vm.loadProject(Buffer.from(await writeSb3(res.sb3!))); // throws if Scratch's validator rejects it
+});
+
+test("loop/waitUntil conditions can call functions; initializers can use constants", async () => {
+  const r = await run({
+    "Stage.ts": `
+      const START = 3;
+      export let n = START;
+      export let neg = -START;
+      export const s = { count: 0, done: false };
+      function below(x: number): boolean { return x < 10; }
+      function ready(): boolean { return n >= 10; }
+      whenFlag(() => {
+        while (below(n)) { n++; s.count++; }
+        for (let i = 0; below(i); i += 4) s.count += 100;
+        waitUntil(() => ready());
+        s.done = true;
+      });`,
+  });
+  assert.equal(Number(r.g("n")), 10);
+  assert.equal(Number(r.g("neg")), -3);
+  assert.equal(Number(r.g("count")), 307); // 7 iterations + 3 for-loop iterations (0, 4, 8)
+  assert.equal(String(r.g("done")), "true");
 });
 
 test("type errors and unsupported syntax are reported with positions", () => {

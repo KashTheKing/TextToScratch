@@ -19,6 +19,7 @@ const editor = {
   define: {
     __ES5__: JSON.stringify(fs.readFileSync(require.resolve("typescript/lib/lib.es5.d.ts"), "utf8")),
     __SCRATCH__: JSON.stringify(fs.readFileSync("lib/scratch.d.ts", "utf8")),
+    __ENGINE__: JSON.stringify(Object.fromEntries(fs.readdirSync("lib/engine").map((f) => [f, fs.readFileSync(`lib/engine/${f}`, "utf8")]))),
     // Monaco's hashed worker files, loaded directly (extension CSP forbids its default blob: workers)
     __WORKERS__: JSON.stringify(Object.fromEntries(fs.readdirSync("node_modules/monaco-editor/min/vs/assets").map((f) => [f.split(".worker")[0], f]))),
   },

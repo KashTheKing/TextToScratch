@@ -8,7 +8,8 @@ const run = (cmd, cwd = ".") => execSync(cmd, { cwd, stdio: "inherit" });
 const copy = (from, to) => fs.cpSync(from, to, { recursive: true });
 
 run("node scripts/build.mjs");
-for (const ex of ["platformer", "catcher"]) run(`node dist/cli.js build examples/${ex}`);
+const EXAMPLES = ["platformer", "catcher", "engine-demo", "3d-demo", "multiplayer"];
+for (const ex of EXAMPLES) run(`node dist/cli.js build examples/${ex}`);
 
 const s = "website/static";
 fs.rmSync(`${s}/editor`, { recursive: true, force: true });
@@ -20,7 +21,7 @@ fs.writeFileSync(`${s}/editor/index.html`, html);
 copy("extension/editor.css", `${s}/editor/editor.css`);
 copy("extension/build/editor.js", `${s}/editor/build/editor.js`);
 copy("extension/vendor", `${s}/editor/vendor`);
-for (const ex of ["platformer", "catcher"]) copy(`examples/${ex}/dist/${ex}.sb3`, `${s}/examples/${ex}.sb3`);
+for (const ex of EXAMPLES) copy(`examples/${ex}/dist/${ex}.sb3`, `${s}/examples/${ex}.sb3`);
 
 // downloadable extension (unpacked-loadable folder, zipped)
 const JSZip = (await import("jszip")).default;

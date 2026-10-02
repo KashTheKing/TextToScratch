@@ -2,8 +2,11 @@ import ts from "typescript";
 import { Arg, HATS, MATHOP, PROPS, REPORT, SHADOW, Slot, Spec, STACK } from "./api";
 
 export interface Diag { file: string; line: number; col: number; message: string }
-export interface VarInfo { name: string; id: string; list: boolean; value: any; global: boolean }
-interface ProcInfo { name: string; proccode: string; ids: string[]; names: string[]; bools: boolean[]; warp: boolean; decl: ts.FunctionDeclaration }
+export interface VarInfo { name: string; id: string; list: boolean; value: any; global: boolean; cloud?: boolean }
+/** An object created with `new` at the top level: fields are variables, methods are compiled per object. */
+interface Instance { name: string; cls: ts.ClassDeclaration; fields: Map<string, VarInfo>; global: boolean }
+type FnDecl = ts.FunctionDeclaration | ts.MethodDeclaration;
+interface ProcInfo { name: string; proccode: string; ids: string[]; names: string[]; bools: boolean[]; warp: boolean; decl: FnDecl }
 type Op = { t: "lit"; v: string | number | boolean } | { t: "blk"; id: string } | { t: "var"; k: 12 | 13; name: string; vid: string };
 type Fields = Record<string, [string, string | null]>;
 
@@ -35,11 +38,34 @@ function literal(e: ts.Expression | undefined): any {
 export class Ctx {
   diags: Diag[] = [];
   globals = new Map<ts.Node, VarInfo>();
+  /** exported objects (`export const boss = new Enemy()`): their fields are global variables */
+  globalInstances = new Map<ts.Node, Instance>();
   consts = new Map<ts.Node, string | number | boolean>();
   globalNames = new Set<string>();
   broadcasts = new Map<string, string>();
   extensions = new Set<string>();
+  /** Library modules (engine, src/lib): their functions and state are compiled into each sprite that uses them. */
+  libs = new Set<ts.SourceFile>();
   constructor(public checker: ts.TypeChecker) {}
+
+  isLib(node: ts.Node) { return this.libs.has(node.getSourceFile()); }
+  modName(node: ts.Node) { return node.getSourceFile().fileName.split("/").pop()!.replace(/\.ts$/, ""); }
+
+  /** Register a library: its literal constants are inlined; anything else at top level must be a declaration. */
+  addLib(sf: ts.SourceFile) {
+    this.libs.add(sf);
+    for (const st of sf.statements) {
+      if (ts.isVariableStatement(st)) {
+        if (st.declarationList.flags & ts.NodeFlags.Const)
+          for (const d of st.declarationList.declarations) {
+            const v = literal(d.initializer);
+            if (v !== undefined && !Array.isArray(v)) this.consts.set(d, v);
+          }
+      } else if (!ts.isFunctionDeclaration(st) && !ts.isClassDeclaration(st) && !ts.isImportDeclaration(st) && !ts.isTypeAliasDeclaration(st) && !ts.isInterfaceDeclaration(st) && !ts.isExportDeclaration(st)) {
+        this.report(st, "Library files can only contain declarations (no events): call library functions from a sprite");
+      }
+    }
+  }
 
   report(node: ts.Node, message: string) {
     const sf = node.getSourceFile();
@@ -86,25 +112,206 @@ export class Target {
   private declareVar(d: ts.VariableDeclaration, isConst: boolean, global: boolean) {
     if (!ts.isIdentifier(d.name)) fail(d, "Destructuring is not supported");
     const name = (d.name as ts.Identifier).text;
+    if (d.initializer && ts.isNewExpression(d.initializer)) return void this.declareInstance(d, global);
     if (d.initializer && ts.isObjectLiteralExpression(d.initializer)) {
       // `const game = { score: 0, items: [] as number[] }` -> one Scratch variable per property
+      // `/** @cloud */ export const net = { a: 0 }` -> cloud variables (numbers only, stored on the stage)
+      const cloud = ts.getJSDocTags(d).some((t) => t.tagName.text === "cloud");
+      if (cloud && !global) fail(d, "@cloud state must be exported (cloud variables are global)");
       for (const p of d.initializer.properties) {
         if (!ts.isPropertyAssignment(p) || !ts.isIdentifier(p.name)) fail(p, "State objects may only contain `name: literal` properties");
-        const v = literal((p as ts.PropertyAssignment).initializer);
-        if (v === undefined) fail(p, "State object values must be literals");
-        const info: VarInfo = { name: this.unique((p.name as ts.Identifier).text, global), id: "", list: Array.isArray(v), value: v, global };
-        info.id = (global ? "g_" : this.prefix + "v_") + info.name;
+        const v = this.initValue((p as ts.PropertyAssignment).initializer);
+        if (v === undefined) fail(p, "State object values must be literals or constants");
+        if (cloud && typeof v !== "number") fail(p, "Cloud variables can only hold numbers");
+        const base = (p.name as ts.Identifier).text;
+        const info: VarInfo = { name: this.unique(cloud ? `☁ ${base}` : base, global), id: "", list: Array.isArray(v), value: v, global, cloud };
+        info.id = (global ? "g_" : this.prefix + "v_") + info.name.replace("☁ ", "cloud_");
         (global ? this.ctx.globals : this.vars).set(p, info);
       }
       return;
     }
-    const val = literal(d.initializer);
-    if (d.initializer && val === undefined) fail(d.initializer!, "Top-level initializers must be literals; assign other values inside whenFlag()");
+    const val = this.initValue(d.initializer);
+    if (d.initializer && val === undefined) fail(d.initializer!, "Top-level initializers must be literals or constants; assign other values inside whenFlag()");
     const list = Array.isArray(val) || this.isArray(d);
     if (isConst && !list && val !== undefined) return void this.ctx.consts.set(d, val);
     const info: VarInfo = { name: this.unique(name, global), id: "", list, value: val ?? (list ? [] : 0), global };
     info.id = (global ? "g_" : this.prefix + "v_") + info.name;
     (global ? this.ctx.globals : this.vars).set(d, info);
+  }
+
+  // ---------- classes ----------
+
+  /** Objects declared in this target (or a library it uses); exported ones live in ctx.globalInstances. */
+  private instances = new Map<ts.Node, Instance>();
+  /** Methods compiled into this target, per object: "boss.update" etc. */
+  private instMethods = new Map<Instance, Map<string, ProcInfo>>();
+  /** The object `this` refers to while compiling a method. */
+  private thisInst: Instance | null = null;
+
+  private baseClass(cls: ts.ClassDeclaration): ts.ClassDeclaration | undefined {
+    const ext = cls.heritageClauses?.find((h) => h.token === ts.SyntaxKind.ExtendsKeyword)?.types[0];
+    if (!ext) return undefined;
+    const d = this.decl(ext.expression);
+    return d && ts.isClassDeclaration(d) ? d : fail(ext, "Classes can only extend other classes");
+  }
+
+  /** Class chain from the base class down to `cls`. */
+  private classChain(cls: ts.ClassDeclaration): ts.ClassDeclaration[] {
+    const base = this.baseClass(cls);
+    return [...(base ? this.classChain(base) : []), cls];
+  }
+
+  /** A method by name, searching from the object's own class up to its bases (so overrides win). */
+  private findMethod(cls: ts.ClassDeclaration, name: string): ts.MethodDeclaration | undefined {
+    for (const c of this.classChain(cls).reverse()) {
+      const m = c.members.find((x) => ts.isMethodDeclaration(x) && ts.isIdentifier(x.name) && x.name.text === name && x.body);
+      if (m) return m as ts.MethodDeclaration;
+    }
+    return undefined;
+  }
+
+  /** Evaluate a constructor argument / field initializer at compile time. */
+  private evalConst(e: ts.Expression, env: Map<string, any>): any {
+    const v = this.initValue(e);
+    if (v !== undefined) return v;
+    if (ts.isIdentifier(e) && env.has(e.text)) return env.get(e.text);
+    if (ts.isParenthesizedExpression(e) || ts.isAsExpression(e)) return this.evalConst(e.expression, env);
+    if (ts.isPrefixUnaryExpression(e) && e.operator === ts.SyntaxKind.MinusToken) {
+      const x = this.evalConst(e.operand, env);
+      return typeof x === "number" ? -x : undefined;
+    }
+    if (ts.isBinaryExpression(e)) {
+      const a = this.evalConst(e.left, env), b = this.evalConst(e.right, env);
+      if (a === undefined || b === undefined) return undefined;
+      switch (e.operatorToken.kind) {
+        case ts.SyntaxKind.PlusToken: return a + b;
+        case ts.SyntaxKind.MinusToken: return a - b;
+        case ts.SyntaxKind.AsteriskToken: return a * b;
+        case ts.SyntaxKind.SlashToken: return a / b;
+      }
+    }
+    return undefined;
+  }
+
+  /** `const boss = new Enemy(3, "red")`: create the object's variables with their starting values. */
+  private declareInstance(d: ts.VariableDeclaration, global: boolean): Instance {
+    const ne = d.initializer as ts.NewExpression;
+    const cls = this.decl(ne.expression);
+    if (!cls || !ts.isClassDeclaration(cls)) return fail(ne, "`new` needs a class declared in your code (or a library)");
+    const objName = (d.name as ts.Identifier).text;
+    const values = new Map<string, any>();
+    const chain = this.classChain(cls);
+
+    // field initializers, base class first
+    for (const c of chain)
+      for (const m of c.members) {
+        if (!ts.isPropertyDeclaration(m) || !ts.isIdentifier(m.name)) continue;
+        if (m.modifiers?.some((x) => x.kind === ts.SyntaxKind.StaticKeyword)) fail(m, "Static fields are not supported; use a top-level const");
+        let v = m.initializer ? this.evalConst(m.initializer, new Map()) : undefined;
+        if (m.initializer && v === undefined) fail(m.initializer, "Field initializers must be literals or constants");
+        if (v === undefined) v = this.isArray(m) ? [] : this.isBool(m) ? false : this.isStr(m) ? "" : 0;
+        values.set(m.name.text, v);
+      }
+
+    // constructors: `this.field = value` and `super(...)`, evaluated at compile time
+    const run = (c: ts.ClassDeclaration, args: any[]) => {
+      const ctor = c.members.find(ts.isConstructorDeclaration);
+      const base = this.baseClass(c);
+      if (!ctor) return void (base && run(base, args));
+      const env = new Map<string, any>();
+      ctor.parameters.forEach((p, i) => {
+        if (!ts.isIdentifier(p.name)) fail(p, "Destructured parameters are not supported");
+        const pn = (p.name as ts.Identifier).text;
+        const v = args[i] !== undefined ? args[i] : p.initializer ? this.evalConst(p.initializer, env) : undefined;
+        if (v === undefined) fail(p, `Missing constructor argument '${pn}' (arguments must be constants)`);
+        env.set(pn, v);
+        if (ts.getCombinedModifierFlags(p) & (ts.ModifierFlags.Public | ts.ModifierFlags.Private | ts.ModifierFlags.Protected | ts.ModifierFlags.Readonly)) values.set(pn, v);
+      });
+      let calledSuper = false;
+      for (const st of ctor.body?.statements ?? []) {
+        if (ts.isExpressionStatement(st) && ts.isCallExpression(st.expression) && st.expression.expression.kind === ts.SyntaxKind.SuperKeyword) {
+          calledSuper = true;
+          if (base) run(base, st.expression.arguments.map((a) => this.evalConst(a, env)));
+          continue;
+        }
+        const e = ts.isExpressionStatement(st) ? st.expression : undefined;
+        if (e && ts.isBinaryExpression(e) && e.operatorToken.kind === ts.SyntaxKind.EqualsToken && ts.isPropertyAccessExpression(e.left) && e.left.expression.kind === ts.SyntaxKind.ThisKeyword) {
+          const v = this.evalConst(e.right, env);
+          if (v === undefined) fail(e.right, "Constructors run when the project is built: assign constants or constructor arguments (do the rest in a method)");
+          values.set(e.left.name.text, v);
+          continue;
+        }
+        fail(st, "Constructors may only contain super(...) and `this.field = value` (put other logic in a method)");
+      }
+      if (base && !calledSuper) run(base, []);
+    };
+    run(cls, ne.arguments?.map((a) => {
+      const v = this.evalConst(a, new Map());
+      return v === undefined ? fail(a, "Constructor arguments must be constants") : v;
+    }) ?? []);
+
+    const inst: Instance = { name: objName, cls, fields: new Map(), global };
+    for (const [field, v] of values) {
+      const info: VarInfo = { name: this.unique(`${objName}.${field}`, global), id: "", list: Array.isArray(v), value: v, global };
+      info.id = (global ? "g_" : this.prefix + "v_") + info.name;
+      inst.fields.set(field, info);
+      (global ? this.ctx.globals : this.vars).set(info as any, info); // registered so it is written to the project
+    }
+    (global ? this.ctx.globalInstances : this.instances).set(d, inst);
+    return inst;
+  }
+
+  /** The object an expression refers to (`this`, `boss`, `Lib.thing`), if any. */
+  private instOf(e: ts.Expression): Instance | undefined {
+    if (e.kind === ts.SyntaxKind.ThisKeyword) return this.thisInst ?? fail(e, "`this` can only be used inside class methods");
+    if (!ts.isIdentifier(e) && !ts.isPropertyAccessExpression(e)) return undefined;
+    const d = this.decl(e);
+    if (!d || !ts.isVariableDeclaration(d) || !d.initializer || !ts.isNewExpression(d.initializer)) return undefined;
+    const known = this.ctx.globalInstances.get(d) ?? this.instances.get(d);
+    if (known) return known;
+    if (!ts.isSourceFile(d.parent.parent.parent)) return fail(d, "Create objects with `new` at the top level of a file");
+    if (this.ctx.isLib(d)) return this.declareInstance(d, false); // library objects: one copy per sprite
+    return fail(e, `'${e.getText()}' belongs to another sprite: export it to share it`);
+  }
+
+  /** `obj.field` / `this.field` -> the variable holding it. */
+  private fieldOf(pa: ts.PropertyAccessExpression): VarInfo | undefined {
+    const inst = this.instOf(pa.expression);
+    return inst?.fields.get(pa.name.text);
+  }
+
+  /** `obj.method(...)` / `this.method(...)` -> that object's copy of the method (compiled on first use). */
+  private methodOf(c: ts.CallExpression): ProcInfo | undefined {
+    if (!ts.isPropertyAccessExpression(c.expression)) return undefined;
+    const inst = this.instOf(c.expression.expression);
+    if (!inst) return undefined;
+    const name = c.expression.name.text;
+    let map = this.instMethods.get(inst);
+    if (!map) this.instMethods.set(inst, (map = new Map()));
+    let p = map.get(name);
+    if (!p) {
+      const m = this.findMethod(inst.cls, name) ?? fail(c, `'${name}' is not a method of ${inst.cls.name?.text ?? "this class"}`);
+      if (m.modifiers?.some((x) => x.kind === ts.SyntaxKind.StaticKeyword)) fail(m, "Static methods are not supported; use a top-level function");
+      p = this.makeProc(m, `${inst.name}.${name}`);
+      map.set(name, p);
+      this.pendingLib.push({ d: m, p, inst });
+    }
+    return p;
+  }
+
+  /** Compile-time value of a top-level initializer: a literal, or a reference to a literal constant. */
+  private initValue(e: ts.Expression | undefined): any {
+    const v = literal(e);
+    if (v !== undefined || !e) return v;
+    if (ts.isIdentifier(e) || ts.isPropertyAccessExpression(e)) {
+      const d = this.decl(e);
+      if (d && this.ctx.consts.has(d)) return this.ctx.consts.get(d);
+    }
+    if (ts.isPrefixUnaryExpression(e) && e.operator === ts.SyntaxKind.MinusToken) {
+      const inner = this.initValue(e.operand);
+      if (typeof inner === "number") return -inner;
+    }
+    return undefined;
   }
 
   private unique(base: string, global: boolean) {
@@ -116,24 +323,40 @@ export class Target {
 
   private declareProc(f: ts.FunctionDeclaration) {
     if (!f.name || !f.body) fail(f, "Functions need a name and a body");
+    // library functions are namespaced ("physics.step") so they can't clash with the sprite's own blocks
+    const name = this.ctx.isLib(f) ? `${this.ctx.modName(f)}.${f.name!.text}` : f.name!.text;
+    this.procs.set(f, this.makeProc(f, name));
+  }
+
+  /** A custom block for a function or method; `name` is the block's label ("physics.step", "boss.update"). */
+  private makeProc(f: FnDecl, name: string): ProcInfo {
     const names = f.parameters.map((p) => (ts.isIdentifier(p.name) ? p.name.text : fail(p, "Destructured parameters are not supported")));
     const bools = f.parameters.map((p) => this.isBool(p));
     const warp = ts.getJSDocTags(f).some((t) => t.tagName.text === "warp");
-    const proccode = [f.name!.text, ...bools.map((b) => (b ? "%b" : "%s"))].join(" ");
-    const ids = names.map((_, i) => `${this.prefix}${f.name!.text}_a${i}`);
-    this.procs.set(f, { name: f.name!.text, proccode, ids, names, bools, warp, decl: f });
+    const proccode = [name, ...bools.map((b) => (b ? "%b" : "%s"))].join(" ");
+    const ids = names.map((_, i) => `${this.prefix}${name}_a${i}`);
+    return { name, proccode, ids, names, bools, warp, decl: f };
   }
 
   // ---------- script pass ----------
 
+  /** Library functions and object methods this sprite uses, waiting to be compiled into it. */
+  private pendingLib: { d: FnDecl; p: ProcInfo; inst: Instance | null }[] = [];
+
   compile() {
     for (const st of this.file.statements) {
       this.guard(() => {
-        if (ts.isFunctionDeclaration(st)) return this.compileProc(st);
+        if (ts.isFunctionDeclaration(st)) return this.compileProc(st, this.procs.get(st)!, null);
+        if (ts.isClassDeclaration(st)) return; // compiled per object, when its methods are used
         if (ts.isExpressionStatement(st) && ts.isCallExpression(st.expression)) return this.compileHat(st.expression);
         if (ts.isVariableStatement(st) || ts.isImportDeclaration(st) || ts.isTypeAliasDeclaration(st) || ts.isInterfaceDeclaration(st) || ts.isExportDeclaration(st)) return;
-        fail(st, "Top-level code must be a declaration, function, or event like whenFlag(() => { ... })");
+        fail(st, "Top-level code must be a declaration, function, class, or event like whenFlag(() => { ... })");
       });
+    }
+    // compiling a library function or method can pull in more of them
+    for (let job; (job = this.pendingLib.shift()); ) {
+      const { d, p, inst } = job;
+      this.guard(() => this.compileProc(d, p, inst));
     }
   }
 
@@ -162,9 +385,8 @@ export class Target {
     this.place(id, start);
   }
 
-  private compileProc(f: ts.FunctionDeclaration) {
+  private compileProc(f: FnDecl, p: ProcInfo, inst: Instance | null) {
     const start = this.n;
-    const p = this.procs.get(f)!;
     const argShadows = p.ids.map((aid, i) => [aid, [1, this.mk(p.bools[i] ? "argument_reporter_boolean" : "argument_reporter_string_number", { f: { VALUE: [p.names[i], null] }, shadow: true })]] as const);
     const proto = this.mk("procedures_prototype", {
       in: Object.fromEntries(argShadows),
@@ -173,7 +395,8 @@ export class Target {
     });
     const def = this.mk("procedures_definition", { in: { custom_block: [1, proto] } });
     this.proc = p;
-    try { this.attach(def, this.chain(f.body!.statements.flatMap((s) => this.stmt(s)))); } finally { this.proc = null; }
+    this.thisInst = inst;
+    try { this.attach(def, this.chain(f.body!.statements.flatMap((s) => this.stmt(s)))); } finally { this.proc = null; this.thisInst = null; }
     this.place(def, start);
   }
 
@@ -290,18 +513,33 @@ export class Target {
     if (!decl) return undefined;
     const known = this.ctx.globals.get(decl) ?? this.vars.get(decl);
     if (known) return known;
-    if (!ts.isVariableDeclaration(decl) || decl.getSourceFile() !== this.file) return undefined;
-    if (ts.isSourceFile(decl.parent.parent.parent)) return undefined; // top-level of another target's file
+    const lib = this.ctx.isLib(decl);
+    if (!lib && decl.getSourceFile() !== this.file) return undefined;
+    // library state object (`export const view = { ... }`): shared globals, created the first time any sprite uses them
+    if (lib && ts.isPropertyAssignment(decl) && ts.isVariableDeclaration(decl.parent.parent) && ts.isSourceFile(decl.parent.parent.parent.parent.parent)) {
+      this.declareVar(decl.parent.parent, true, true);
+      return this.ctx.globals.get(decl);
+    }
+    if (!ts.isVariableDeclaration(decl)) return undefined;
+    const topLevel = ts.isSourceFile(decl.parent.parent.parent);
+    if (topLevel && !lib) return undefined; // top-level of another target's file
     if (!ts.isIdentifier(decl.name)) fail(decl, "Destructuring is not supported");
-    const name = this.unique((decl.name as ts.Identifier).text, false);
+    // library top-level variables: every sprite that uses the library gets its own copy ("physics.vx")
+    const base = (decl.name as ts.Identifier).text;
+    const name = this.unique(topLevel ? `${this.ctx.modName(decl)}.${base}` : base, false);
     const info: VarInfo = { name, id: this.prefix + "v_" + name, list: this.isArray(decl), value: 0, global: false };
-    if (info.list) info.value = [];
+    if (topLevel) {
+      const v = this.initValue(decl.initializer);
+      if (decl.initializer && v === undefined) fail(decl.initializer, "Top-level initializers must be literals or constants");
+      if (v !== undefined) info.value = v;
+    }
+    if (info.list && !Array.isArray(info.value)) info.value = [];
     this.vars.set(decl, info);
     return info;
   }
 
   private varRef(node: ts.Expression): VarInfo {
-    const v = ts.isIdentifier(node) || ts.isPropertyAccessExpression(node) ? this.varOf(this.decl(node)) : undefined;
+    const v = ts.isPropertyAccessExpression(node) ? this.fieldOf(node) ?? this.varOf(this.decl(node)) : ts.isIdentifier(node) ? this.varOf(this.decl(node)) : undefined;
     return v ?? fail(node, ts.isIdentifier(node) ? `'${node.text}' is not a variable of this sprite (export it to share it)` : "Expected a variable");
   }
 
@@ -353,16 +591,12 @@ export class Target {
   }
 
   /** Run fn with a fresh hoisting buffer; returns hoisted blocks + result. */
+  /** Run fn with a fresh hoisting buffer (its own "one value-returning call" budget); returns hoisted blocks + result. */
   private hoisted<T>(fn: () => T): [string[], T] {
-    const saved = this.pre;
+    const saved = [this.pre, this.retUsed] as const;
     this.pre = [];
-    try { const r = fn(); return [this.pre, r]; } finally { this.pre = saved; }
-  }
-
-  private noHoist<T>(node: ts.Node, fn: () => T): T {
-    const [pre, r] = this.hoisted(fn);
-    if (pre.length) fail(node, "Loop conditions can't call functions that return values or use ?: — compute it into a variable first");
-    return r;
+    this.retUsed = 0;
+    try { const r = fn(); return [this.pre, r]; } finally { [this.pre, this.retUsed] = saved; }
   }
 
   private callback(e: ts.Expression): string | null {
@@ -403,13 +637,13 @@ export class Target {
     }
     if (ts.isWhileStatement(s)) {
       if (s.expression.kind === ts.SyntaxKind.TrueKeyword) return [this.mk("control_forever", { in: { SUBSTACK: this.sub(this.body(s.statement)) } })];
-      return [this.until(s.expression, this.stmt(s.statement))];
+      return this.until(s.expression, this.stmt(s.statement));
     }
     if (ts.isForStatement(s)) {
       const init = !s.initializer ? [] : ts.isVariableDeclarationList(s.initializer) ? this.varDecls(s.initializer) : this.exprStmt(s.initializer);
       const loop = [...this.stmt(s.statement), ...(s.incrementor ? this.stmt(s.incrementor, true) : [])];
       if (!s.condition) return [...init, this.mk("control_forever", { in: { SUBSTACK: this.sub(this.chain(loop)) } })];
-      return [...init, this.until(s.condition, loop)];
+      return [...init, ...this.until(s.condition, loop)];
     }
     if (ts.isReturnStatement(s)) {
       const out: string[] = [];
@@ -425,10 +659,17 @@ export class Target {
     return fail(s, `Unsupported statement: ${ts.SyntaxKind[s.kind]}`);
   }
 
-  private until(cond: ts.Expression, body: string[]): string {
-    const c = this.noHoist(cond, () =>
-      ts.isPrefixUnaryExpression(cond) && cond.operator === ts.SyntaxKind.ExclamationToken ? this.expr(cond.operand) : this.not(this.expr(cond)));
-    return this.mk("control_repeat_until", { in: { CONDITION: this.inp(c, "b"), SUBSTACK: this.sub(this.chain(body)) } });
+  /** `while (cond) body` as repeat-until. Conditions that call functions are evaluated into a variable
+   *  before the loop and again at the end of every iteration. */
+  private until(cond: ts.Expression, body: string[]): string[] {
+    const stop = () => (ts.isPrefixUnaryExpression(cond) && cond.operator === ts.SyntaxKind.ExclamationToken ? this.expr(cond.operand) : this.not(this.expr(cond)));
+    const [pre, c] = this.hoisted(stop);
+    if (!pre.length) return [this.mk("control_repeat_until", { in: { CONDITION: this.inp(c, "b"), SUBSTACK: this.sub(this.chain(body)) } })];
+    const v = this.tempVar();
+    const before = [...pre, this.setVar(v, c)];
+    const [pre2, c2] = this.hoisted(stop); // a second copy of the condition for the end of each iteration
+    const again = [...pre2, this.setVar(v, c2)];
+    return [...before, this.mk("control_repeat_until", { in: { CONDITION: this.inp(this.V(v), "b"), SUBSTACK: this.sub(this.chain([...body, ...again])) } })];
   }
 
   private varDecls(list: ts.VariableDeclarationList): string[] {
@@ -464,7 +705,7 @@ export class Target {
     const str = this.isStr(lhs);
     const compound = (cur: () => Op) => (kind === K.EqualsToken ? val() : this.arith(kind, cur(), val(), str, node));
 
-    if (ts.isIdentifier(lhs) || (ts.isPropertyAccessExpression(lhs) && this.varOf(this.decl(lhs)))) {
+    if (ts.isIdentifier(lhs) || (ts.isPropertyAccessExpression(lhs) && (this.fieldOf(lhs) ?? this.varOf(this.decl(lhs))))) {
       const v = this.varRef(lhs);
       if (v.list) {
         if (kind !== K.EqualsToken || typeof rhs === "number" || !ts.isArrayLiteralExpression(rhs)) return fail(node, "Lists can only be reassigned with [ ... ]");
@@ -518,7 +759,12 @@ export class Target {
         if (!ts.isArrowFunction(f)) return fail(f, "Expected () => condition");
         const body = ts.isBlock(f.body) && f.body.statements.length === 1 && ts.isReturnStatement(f.body.statements[0]) ? f.body.statements[0].expression! : f.body;
         if (ts.isBlock(body)) return fail(f, "Expected () => condition");
-        return [this.mk("control_wait_until", { in: { CONDITION: this.inp(this.noHoist(body, () => this.expr(body as ts.Expression)), "b") } })];
+        const [pre, c] = this.hoisted(() => this.expr(body as ts.Expression));
+        if (!pre.length) return [this.mk("control_wait_until", { in: { CONDITION: this.inp(c, "b") } })];
+        // the condition calls functions: poll it once per frame instead
+        const v = this.tempVar();
+        const [pre2, c2] = this.hoisted(() => this.expr(body as ts.Expression));
+        return [...pre, this.setVar(v, c), this.mk("control_repeat_until", { in: { CONDITION: this.inp(this.V(v), "b"), SUBSTACK: this.sub(this.chain([...pre2, this.setVar(v, c2)])) } })];
       }
       if (name === "showVariable" || name === "hideVariable") {
         const v = this.varRef(args[0]);
@@ -556,10 +802,16 @@ export class Target {
   }
 
   private procOf(c: ts.CallExpression): ProcInfo | undefined {
-    if (!ts.isIdentifier(c.expression)) return undefined;
+    const method = this.methodOf(c);
+    if (method) return method;
+    if (!ts.isIdentifier(c.expression) && !ts.isPropertyAccessExpression(c.expression)) return undefined; // f() or Lib.f()
     const d = this.decl(c.expression);
     if (!d || !ts.isFunctionDeclaration(d)) return undefined;
-    return this.procs.get(d) ?? fail(c, "Functions can only be called from the same sprite file (use broadcast for other sprites)");
+    if (!this.procs.has(d) && this.ctx.isLib(d)) {
+      this.declareProc(d);
+      this.pendingLib.push({ d, p: this.procs.get(d)!, inst: null });
+    }
+    return this.procs.get(d) ?? fail(c, "Functions can only be called from the same sprite file (use broadcast for other sprites, or move shared code to src/lib/)");
   }
 
   private procCall(p: ProcInfo, c: ts.CallExpression): string {
@@ -631,10 +883,11 @@ export class Target {
     }
 
     if (ts.isPropertyAccessExpression(e)) {
-      const pv = this.varOf(this.decl(e));
+      const pv = this.fieldOf(e) ?? this.varOf(this.decl(e));
       if (pv) return this.V(pv);
       const p = e.name.text;
       if (this.isMe(e.expression)) {
+        if (p === "visible") fail(e, "Scratch can't report whether a sprite is visible: keep it in a variable (Camera.place sets Camera.onScreen)");
         const spec = PROPS[p]?.get ?? fail(e, `me.${p} can't be read`);
         return this.B(this.call(spec, [], e));
       }
@@ -707,7 +960,7 @@ export class Target {
   variables(global: boolean) {
     const out: Record<string, [string, any]> = {};
     const lists: Record<string, [string, any[]]> = {};
-    for (const v of (global ? this.ctx.globals : this.vars).values()) (v.list ? lists : out)[v.id] = [v.name, v.value] as any;
+    for (const v of (global ? this.ctx.globals : this.vars).values()) (v.list ? lists : out)[v.id] = (v.cloud ? [v.name, v.value, true] : [v.name, v.value]) as any;
     return { variables: out, lists };
   }
 }

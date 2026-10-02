@@ -12,7 +12,8 @@ export interface BuildInput {
   images?: Record<string, Uint8Array>;
   base: Sb3;
 }
-export interface Libs { es5: string; scratch: string }
+/** es5/scratch: type libraries. engine: "physics.ts" -> source, importable as "tts/physics". */
+export interface Libs { es5: string; scratch: string; engine?: Record<string, string> }
 export interface BuildResult { sb3: Sb3 | null; diagnostics: Diag[]; types: string }
 
 export const SOURCE_COMMENT = "tts_source";
@@ -67,15 +68,18 @@ export function build(input: BuildInput, libs: Libs): BuildResult {
   const json = structuredClone(input.base.json);
   const files = { ...input.base.files };
   const images = input.images ?? {};
-  const names = Object.keys(input.sources).map((f) => f.replace(/\.ts$/, ""));
+  // "Player.ts" is a sprite; files in folders ("lib/math.ts") are shared libraries
+  const names = Object.keys(input.sources).filter((f) => !f.includes("/")).map((f) => f.replace(/\.ts$/, ""));
   const types = typesFor(json, [...names, ...Object.keys(images).map((p) => p.split("/")[0])], Object.keys(images));
 
   // ---- type check ----
   const vfs = new Map<string, string>([["/lib.es5.d.ts", libs.es5], ["/scratch.d.ts", libs.scratch], ["/sprites.d.ts", types]]);
   for (const [f, src] of Object.entries(input.sources)) vfs.set("/src/" + f, src);
+  for (const [f, src] of Object.entries(libs.engine ?? {})) vfs.set("/engine/" + f, src);
   const options: ts.CompilerOptions = {
     strict: true, noEmit: true, target: ts.ScriptTarget.ES5, module: ts.ModuleKind.ESNext,
     moduleResolution: ts.ModuleResolutionKind.Bundler, moduleDetection: ts.ModuleDetectionKind.Force, types: [], skipLibCheck: true,
+    baseUrl: "/", paths: { "tts/*": ["engine/*"] },
   };
   const host: ts.CompilerHost = {
     getSourceFile: (f, v) => (vfs.has(f) ? ts.createSourceFile(f, vfs.get(f)!, v, true) : undefined),
@@ -97,6 +101,7 @@ export function build(input: BuildInput, libs: Libs): BuildResult {
 
   // ---- compile ----
   const ctx = new Ctx(program.getTypeChecker());
+  for (const sf of program.getSourceFiles()) if (sf.fileName.startsWith("/engine/") || sf.fileName.startsWith("/src/lib/")) ctx.addLib(sf);
   const targets = names.map((name, i) => new Target(ctx, name, name === "Stage", program.getSourceFile("/src/" + name + ".ts")!, `t${i}_`));
   targets.forEach((t) => t.declare(1));
   targets.forEach((t) => t.declare(2));

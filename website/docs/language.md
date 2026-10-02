@@ -33,7 +33,7 @@ const items: string[] = [];             // list
 | `const list: number[] = [1, 2]` | list with starting items |
 | `let i = 0` inside a function or event | a sprite variable with a unique name |
 
-Initial values must be literals. They're saved in the project as the variable's starting value.
+Initial values must be literals or constants (`let x = START_X`). They're saved in the project as the variable's starting value.
 
 ### Using shared state
 
@@ -75,6 +75,8 @@ onClone(() => { ... });
 | `cond ? a : b` | if / else into a temporary variable |
 | `return` | <span className="blk control">stop this script</span> |
 
+Loop and `waitUntil` conditions can call your functions; the compiler evaluates them again on every iteration.
+
 ## Functions = custom blocks
 
 ```ts
@@ -114,6 +116,12 @@ if (me.costumeName === "jump") { ... }
 | `random(1, 10)` | <span className="blk operators">pick random 1 to 10</span> |
 | `str.length`, `str[i]`, `str.includes(s)` | length / letter of / contains |
 | `list[i]`, `list.length`, `list.includes(x)`, `list.indexOf(x)` | list reporters |
+
+## Classes, libraries and the engine
+
+- [Classes](./engine/classes.md): fields, methods, constructors and `extends`. Each object becomes variables plus custom blocks.
+- Shared code goes in `src/lib/`, and the [game engine](./engine/overview.md) is built in: `import * as Physics from "tts/physics"`.
+- `/** @cloud */ export const online = { best: 0 }` makes cloud variables.
 
 ## Typed asset names
 
