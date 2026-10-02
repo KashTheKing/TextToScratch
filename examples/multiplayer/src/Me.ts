@@ -22,7 +22,7 @@ whenFlag(() => {
     me.y = Math.max(-160, Math.min(160, me.y));
     Net.sendState(me.x, me.y, 0, 0);
     const wave = Input.pressedOnce("m");
-    if (wave) Net.sendMessage(`player ${Net.session.slot} says hi!`);
+    if (wave) Net.sendMessage(0);
     const got = Net.pollMessage();
     if (got) say(Net.message);
   });

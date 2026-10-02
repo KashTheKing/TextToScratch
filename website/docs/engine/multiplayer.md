@@ -6,7 +6,7 @@ title: Multiplayer
 
 `import * as Net from "tts/net"`
 
-Real-time multiplayer for up to **6 players**, plus a short text message channel, built on Scratch **cloud variables**.
+Real-time multiplayer for up to **6 players**, plus a **quick chat** channel, built on Scratch **cloud variables**.
 
 ![Two clients: each sees the other player, and client B shows the wave sent by client A](/img/engine/multiplayer.png)
 
@@ -20,6 +20,7 @@ whenFlag(() => {
     me.x += Input.axisX() * 5;
     me.y += Input.axisY() * 5;
     Net.sendState(me.x, me.y, 0, 0);            // four numbers per player
+    if (Input.pressedOnce("m")) Net.sendMessage(0); // "Hi!"
     const got = Net.pollMessage();
     if (got) say(Net.message);
   });
@@ -57,9 +58,9 @@ The full demo is `examples/multiplayer`.
 | `session.slot` | this player's slot, 1–6, shared by all your sprites |
 | `sendState(a, b, c, d)` | publish four whole numbers from -4999 to 4999 (position, direction, score...); throttled to 10 per second |
 | `readPlayer(slot)` | read a player into `pa`, `pb`, `pc`, `pd`; true if they updated in the last 3 seconds |
-| `sendMessage(text)` | send a short message (about 100 characters) to everyone |
-| `pollMessage()` | true when someone else sent a new message; read `message` and `messageFrom` |
-| `encode(text)` / `decode(digits)` | the text ⇄ digits encoding used for cloud variables |
+| `sendMessage(phrase)` | send `QUICK_CHAT[phrase]` to everyone |
+| `QUICK_CHAT` | the phrase list: Hi!, Good game!, Follow me!, Nice!, Oops!, Bye! |
+| `pollMessage()` | true when someone else sent a new message; read `message` (the phrase) and `messageFrom` |
 | `SLOTS` | 6 |
 
 ## Where it works
@@ -73,7 +74,12 @@ The full demo is `examples/multiplayer`.
 
 The module declares 7 cloud variables (`☁ p1`–`☁ p6` and `☁ msg`). Scratch allows 10 per project, which leaves 3 for you.
 Each player writes only their own slot: a heartbeat plus four numbers, packed as digits. A player counts as active
-while their heartbeat keeps changing. Text is encoded as two digits per character (lower case, digits and common punctuation).
+while their heartbeat keeps changing.
+
+:::info Why quick chat only
+Scratch does not allow free-text chat in projects (it can not be moderated), so messages are a phrase number.
+You can change the phrases in `QUICK_CHAT`, but keep them to a fixed list.
+:::
 
 ### Your own cloud variables
 

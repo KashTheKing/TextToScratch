@@ -53,6 +53,7 @@ export default function Home(): ReactNode {
             <div className={styles.buttons}>
               <Link className={`button button--lg ${styles.solid}`} to="/docs/intro">Get started</Link>
               <Link className={`button button--lg ${styles.outline}`} to="/docs/platformer">Build a platformer</Link>
+              <Link className={`button button--lg ${styles.outline}`} href="https://scratch.mit.edu/studios/52025574">Play the games</Link>
             </div>
           </div>
           <div className={styles.heroCode}>

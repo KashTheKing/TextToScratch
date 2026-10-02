@@ -45,3 +45,7 @@ Each file is one sprite (`Stage.ts` is the stage). `whenFlag`, `forever`, `keyPr
 `me` is the current sprite, and `game` is shared state that every sprite can read and change.
 
 Ready? **[Install the extension](./install.md)**, then follow the **[platformer tutorial](./platformer.md)**.
+
+:::tip Play the games
+Every example game is in the official [TextToScratch studio on Scratch](https://scratch.mit.edu/studios/52025574). Made something? Add it there!
+:::

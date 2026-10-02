@@ -113,15 +113,13 @@ test("3d projection and rotation", async () => {
   near(r.g("rz"), 10, 1e-6);
 });
 
-test("net: text encoding and player state round trip over cloud variables", async () => {
+test("net: player state round trip over cloud variables", async () => {
   const r = await run(
     {
       "Stage.ts": `
         import * as Net from "tts/net";
-        export const out = { enc: "", dec: "", slot: 0, active: false, a: 0, b: 0, c: 0, d: 0, other: true };
+        export const out = { slot: 0, active: false, a: 0, b: 0, c: 0, d: 0, other: true };
         whenFlag(() => {
-          out.enc = Net.encode("hi 42!");
-          out.dec = Net.decode(out.enc);
           Net.join();
           out.slot = Net.session.slot;
           wait(0.15);
@@ -134,7 +132,6 @@ test("net: text encoding and player state round trip over cloud variables", asyn
     0,
     2800,
   );
-  assert.equal(r.g("dec"), "hi 42!");
   assert.equal(Number(r.g("slot")), 1); // lowest free slot
   assert.equal(String(r.g("active")), "true");
   assert.deepEqual([r.g("a"), r.g("b"), r.g("c"), r.g("d")].map(Number), [-120, 75, 4999, -4999]);
@@ -315,7 +312,7 @@ test("every engine module type-checks and compiles when fully used", () => {
         Draw.rect(0, 0, 10, 10, "#ff0000"); Draw.outline(0, 0, 10, 10, 2, "#00ff00"); Draw.circle(0, 0, 5, "#0000ff");
         Draw.line(0, 0, 5, 5, 2, "#000000"); Draw.bar(-50, 0, 100, 10, 0.5, "#00ff00", "#333333");
         Particles.burst(0, 0, 3, 2, 10, 0.1);
-        Net.sendMessage("hello"); const pm = Net.pollMessage();
+        Net.sendMessage(1); const pm = Net.pollMessage();
       });
       onClone(() => Particles.run());`,
   });

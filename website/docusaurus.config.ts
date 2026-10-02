@@ -37,6 +37,7 @@ const config: Config = {
       items: [
         { type: "docSidebar", sidebarId: "docs", position: "left", label: "Guide" },
         { to: "/docs/reference", label: "API", position: "left" },
+        { href: "https://scratch.mit.edu/studios/52025574", label: "Scratch Studio", position: "right" },
         { href: "pathname:///text-to-scratch/editor/", label: "Open Editor", position: "right" },
       ],
     },
@@ -60,7 +61,11 @@ const config: Config = {
         },
         {
           title: "More",
-          items: [{ label: "kashtheking.com", href: "https://kashtheking.com" }],
+          items: [
+            { label: "Official Scratch studio", href: "https://scratch.mit.edu/studios/52025574" },
+            { label: "GitHub", href: "https://github.com/KashTheKing/TextToScratch" },
+            { label: "kashtheking.com", href: "https://kashtheking.com" },
+          ],
         },
       ],
       copyright: `TextToScratch is not affiliated with the Scratch Foundation. Scratch is a project of the Scratch Foundation.`,
