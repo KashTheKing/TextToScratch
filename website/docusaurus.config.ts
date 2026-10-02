@@ -64,6 +64,8 @@ const config: Config = {
           items: [
             { label: "Official Scratch studio", href: "https://scratch.mit.edu/studios/52025574" },
             { label: "GitHub", href: "https://github.com/KashTheKing/TextToScratch" },
+            { label: "Support", to: "/support" },
+            { label: "Privacy policy", to: "/privacy" },
             { label: "kashtheking.com", href: "https://kashtheking.com" },
           ],
         },
