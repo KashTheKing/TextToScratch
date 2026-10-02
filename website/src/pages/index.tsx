@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import Link from "@docusaurus/Link";
 import useBaseUrl from "@docusaurus/useBaseUrl";
 import Layout from "@theme/Layout";
+import Head from "@docusaurus/Head";
 import CodeBlock from "@theme/CodeBlock";
 import styles from "./index.module.css";
 
@@ -33,7 +34,10 @@ const FEATURES: { color: string; title: string; text: string }[] = [
 
 export default function Home(): ReactNode {
   return (
-    <Layout title="Write Scratch in TypeScript" description="Write Scratch games in typed TypeScript and compile them to real Scratch blocks.">
+    <Layout description="Write Scratch games in typed TypeScript and compile them to real Scratch blocks.">
+      <Head>
+        <title>TextToScratch | Write TypeScript in Scratch</title>
+      </Head>
       <header className={styles.hero}>
         <div className={styles.heroInner}>
           <div className={styles.heroText}>
