@@ -1,5 +1,5 @@
 // TextToScratch editor: Monaco + in-browser compiler. Runs standalone or embedded (iframe) in the Scratch editor.
-import { build, emptyProject, IMAGE_EXT, readSb3, Sb3, sourcesOf, typesFor, writeSb3, Diag } from "../src/compiler";
+import { build, emptyProject, IMAGE_EXT, readSb3, Sb3, SOUND_EXT, sourcesOf, typesFor, writeSb3, Diag } from "../src/compiler";
 
 declare const __ES5__: string, __SCRATCH__: string, __WORKERS__: Record<string, string>;
 declare const require: any;
@@ -73,7 +73,7 @@ function renderTiles() {
     if (src) tile.append(Object.assign(document.createElement("img"), { src, alt: "" }));
     tile.append(Object.assign(document.createElement("div"), { className: "name", textContent: name }));
     const added = Object.keys(images).filter((p) => p.split("/")[0] === name).length;
-    if (added) tile.append(Object.assign(document.createElement("div"), { className: "badge", textContent: "+" + added, title: `${added} new costume(s)` }));
+    if (added) tile.append(Object.assign(document.createElement("div"), { className: "badge", textContent: "+" + added, title: `${added} new costume/sound file(s)` }));
     if (files[file] !== undefined && name !== "Stage") {
       const del = Object.assign(document.createElement("button"), { className: "delete", textContent: "✕", title: "Delete this code file (sprite keeps its costumes)" });
       del.onclick = (e) => { e.stopPropagation(); if (confirm(`Delete ${file}?`)) removeFile(file); };
@@ -87,11 +87,11 @@ function renderTiles() {
       tile.classList.remove("drop");
       for (const f of Array.from(e.dataTransfer?.files ?? [])) {
         const ext = f.name.split(".").pop()!.toLowerCase();
-        if (IMAGE_EXT.includes(ext)) images[`${name}/${f.name}`] = new Uint8Array(await f.arrayBuffer());
+        if ([...IMAGE_EXT, ...SOUND_EXT].includes(ext)) images[`${name}/${f.name}`] = new Uint8Array(await f.arrayBuffer());
       }
       refreshTypes();
       renderTiles();
-      status(`Costumes added to ${name} — build to apply`);
+      status(`Files added to ${name} — build to apply`);
     };
     tiles.append(tile);
   }

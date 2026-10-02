@@ -1,6 +1,6 @@
 import ts from "typescript";
 import { Ctx, Diag, Target } from "./compile";
-import { emptyProject, IMAGE_EXT, makeCostume, newSprite, Sb3 } from "./project";
+import { emptyProject, IMAGE_EXT, makeCostume, makeSound, newSprite, Sb3, SOUND_EXT } from "./project";
 
 export * from "./project";
 export type { Diag } from "./compile";
@@ -8,7 +8,7 @@ export type { Diag } from "./compile";
 export interface BuildInput {
   /** "Player.ts" -> source. File name (without .ts) is the sprite name; "Stage.ts" is the stage. */
   sources: Record<string, string>;
-  /** "Player/run1.png" -> bytes. Images in a folder named after a sprite become its costumes. */
+  /** "Player/run1.png" -> bytes. In a folder named after a sprite, images become costumes and wav/mp3 files become sounds. */
   images?: Record<string, Uint8Array>;
   base: Sb3;
 }
@@ -24,21 +24,43 @@ const q = (names: Iterable<string>) => [...new Set(names)].map((n) => JSON.strin
 export function typesFor(json: any, extraSprites: string[] = [], images: string[] = []): string {
   const sprites = json.targets.filter((t: any) => !t.isStage);
   const stage = json.targets.find((t: any) => t.isStage);
-  const imageNames = (folder: (f: string) => boolean) => images.filter((p) => folder(p.split("/")[0])).map((p) => p.split("/").pop()!.replace(/\.[^.]+$/, ""));
+  const names = (exts: string[], folder: (f: string) => boolean) =>
+    images.filter((p) => folder(p.split("/")[0]) && exts.includes(p.split(".").pop()!.toLowerCase())).map((p) => p.split("/").pop()!.replace(/\.[^.]+$/, ""));
   return [
     `type SpriteName = ${q([...sprites.map((t: any) => t.name), ...extraSprites.filter((s) => s !== "Stage")])};`,
-    `type CostumeName = ${q([...sprites.flatMap((t: any) => t.costumes.map((c: any) => c.name)), ...imageNames((f) => f !== "Stage")])};`,
-    `type BackdropName = ${q([...stage.costumes.map((c: any) => c.name), ...imageNames((f) => f === "Stage")])};`,
-    `type SoundName = ${q(json.targets.flatMap((t: any) => t.sounds.map((s: any) => s.name)))};`,
+    `type CostumeName = ${q([...sprites.flatMap((t: any) => t.costumes.map((c: any) => c.name)), ...names(IMAGE_EXT, (f) => f !== "Stage")])};`,
+    `type BackdropName = ${q([...stage.costumes.map((c: any) => c.name), ...names(IMAGE_EXT, (f) => f === "Stage")])};`,
+    `type SoundName = ${q([...json.targets.flatMap((t: any) => t.sounds.map((s: any) => s.name)), ...names(SOUND_EXT, () => true)])};`,
     "",
   ].join("\n");
 }
 
-/** Sources stored in a project (Stage comment), or null. */
+// Scratch rejects projects with comments over 8000 characters, so sources are split across comments.
+const CHUNK = 7500;
+const PART = /^TextToScratch source part (\d+)\/(\d+)[^\n]*\n/;
+
+function sourceComments(sources: Record<string, string>) {
+  const text = JSON.stringify(sources);
+  const n = Math.max(1, Math.ceil(text.length / CHUNK));
+  return Object.fromEntries(Array.from({ length: n }, (_, i) => [
+    `${SOURCE_COMMENT}_${i}`,
+    { blockId: null, x: 0, y: i * 40, width: 400, height: 200, minimized: true,
+      text: `TextToScratch source part ${i + 1}/${n} (edit with the TextToScratch editor)\n` + text.slice(i * CHUNK, (i + 1) * CHUNK) },
+  ]));
+}
+
+const isSourceComment = (c: any) => typeof c?.text === "string" && (PART.test(c.text) || c.text.startsWith(SOURCE_HEADER));
+
+/** Sources stored in a project (Stage comments), or null. */
 export function sourcesOf(json: any): Record<string, string> | null {
-  const c = json.targets.find((t: any) => t.isStage)?.comments?.[SOURCE_COMMENT];
-  if (!c?.text?.startsWith(SOURCE_HEADER)) return null;
-  try { return JSON.parse(c.text.slice(SOURCE_HEADER.length)); } catch { return null; }
+  const comments = Object.values(json.targets.find((t: any) => t.isStage)?.comments ?? {}) as any[];
+  const legacy = comments.find((c) => c?.text?.startsWith(SOURCE_HEADER));
+  const parts = comments.map((c) => ({ m: typeof c?.text === "string" ? c.text.match(PART) : null, text: c?.text as string })).filter((p) => p.m);
+  const text = legacy
+    ? legacy.text.slice(SOURCE_HEADER.length)
+    : parts.sort((a, b) => Number(a.m![1]) - Number(b.m![1])).map((p) => p.text.slice(p.m![0].length)).join("");
+  if (!text) return null;
+  try { return JSON.parse(text); } catch { return null; }
 }
 
 export function build(input: BuildInput, libs: Libs): BuildResult {
@@ -96,8 +118,16 @@ export function build(input: BuildInput, libs: Libs): BuildResult {
   for (const [path, bytes] of Object.entries(images).sort(([a], [b]) => a.localeCompare(b, undefined, { numeric: true }))) {
     const [folder, file] = path.split("/");
     const ext = file.split(".").pop()!.toLowerCase();
-    if (!IMAGE_EXT.includes(ext)) continue;
     const t = find(folder);
+    if (SOUND_EXT.includes(ext)) {
+      const s = makeSound(file.replace(/\.[^.]+$/, ""), bytes, ext);
+      files[s.file[0]] = s.file[1];
+      const i = t.sounds.findIndex((x: any) => x.name === s.sound.name);
+      if (i >= 0) t.sounds[i] = s.sound;
+      else t.sounds.push(s.sound);
+      continue;
+    }
+    if (!IMAGE_EXT.includes(ext)) continue;
     const c = makeCostume(file.replace(/\.[^.]+$/, ""), bytes, ext);
     files[c.file[0]] = c.file[1];
     if (t.costumes.length === 1 && placeholders.has(t.costumes[0].assetId)) t.costumes = [];
@@ -122,8 +152,8 @@ export function build(input: BuildInput, libs: Libs): BuildResult {
   stage.lists = { ...(stageTarget ? {} : stage.lists), ...stageLocal.lists, ...g.lists };
   stage.broadcasts = { ...stage.broadcasts, ...Object.fromEntries([...ctx.broadcasts].map(([n, id]) => [id, n])) };
   stage.comments = {
-    ...(stageTarget ? {} : stage.comments),
-    [SOURCE_COMMENT]: { blockId: null, x: 0, y: 0, width: 400, height: 200, minimized: true, text: SOURCE_HEADER + JSON.stringify(input.sources) },
+    ...(stageTarget ? {} : Object.fromEntries(Object.entries(stage.comments ?? {}).filter(([, c]) => !isSourceComment(c)))),
+    ...sourceComments(input.sources),
   };
   json.extensions = [...new Set([...(json.extensions ?? []), ...ctx.extensions])];
 

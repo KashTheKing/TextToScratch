@@ -106,6 +106,29 @@ export function makeCostume(name: string, bytes: Uint8Array, ext: string) {
 }
 
 export const IMAGE_EXT = ["png", "svg", "jpg", "jpeg"];
+export const SOUND_EXT = ["wav", "mp3"];
+
+/** Turn an audio file into a sound entry + asset file. Rate/sampleCount only feed the editor's display. */
+export function makeSound(name: string, bytes: Uint8Array, ext: string) {
+  let rate = 48000, sampleCount = 0;
+  if (ext === "wav" && bytes.length > 44) {
+    const dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    rate = dv.getUint32(24, true);
+    const frameBytes = dv.getUint16(32, true) || 1;
+    // find the "data" chunk
+    for (let i = 12; i + 8 <= bytes.length; i += 8 + dv.getUint32(i + 4, true)) {
+      if (String.fromCharCode(...bytes.subarray(i, i + 4)) === "data") {
+        sampleCount = Math.floor(dv.getUint32(i + 4, true) / frameBytes);
+        break;
+      }
+    }
+  }
+  const assetId = md5(bytes);
+  return {
+    sound: { name, assetId, dataFormat: ext, format: "", rate, sampleCount, md5ext: `${assetId}.${ext}` },
+    file: [`${assetId}.${ext}`, bytes] as const,
+  };
+}
 
 const PLACEHOLDER = `<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48"><rect x="2" y="2" width="44" height="44" rx="10" fill="#4C97FF" stroke="#3373CC" stroke-width="4"/></svg>`;
 const BACKDROP = `<svg xmlns="http://www.w3.org/2000/svg" width="480" height="360"><rect width="480" height="360" fill="#ffffff"/></svg>`;

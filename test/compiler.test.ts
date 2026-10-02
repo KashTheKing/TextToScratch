@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
-import { build, emptyProject, writeSb3 } from "../src/compiler";
+import { build, emptyProject, sourcesOf, writeSb3 } from "../src/compiler";
 
 const VM = require("scratch-vm");
 const libs = {
@@ -136,6 +136,38 @@ test("image folders become costumes", async () => {
   assert.deepEqual(hero.costumes.map((c: any) => [c.name, c.rotationCenterX, c.rotationCenterY]), [["idle", 10, 5], ["walk", 10, 5]]);
   // Scratch renders an SVG without a viewBox as 0x0, so one must be added
   assert.match(new TextDecoder().decode(res.sb3!.files[hero.costumes[0].md5ext]), /viewBox="0 0 20 10"/);
+});
+
+test("wav/mp3 files in a sprite folder become sounds", async () => {
+  // 100 frames of 16-bit mono silence at 22050 Hz
+  const wav = new Uint8Array(44 + 200);
+  const dv = new DataView(wav.buffer);
+  wav.set(new TextEncoder().encode("RIFF"), 0);
+  dv.setUint32(4, 36 + 200, true);
+  wav.set(new TextEncoder().encode("WAVEfmt "), 8);
+  dv.setUint32(16, 16, true); dv.setUint16(20, 1, true); dv.setUint16(22, 1, true);
+  dv.setUint32(24, 22050, true); dv.setUint32(28, 44100, true); dv.setUint16(32, 2, true); dv.setUint16(34, 16, true);
+  wav.set(new TextEncoder().encode("data"), 36);
+  dv.setUint32(40, 200, true);
+  const res = build({ sources: { "Hero.ts": `whenFlag(() => { playSound("jump"); });` }, images: { "Hero/jump.wav": wav }, base: emptyProject() }, libs);
+  assert.deepEqual(res.diagnostics, []);
+  const hero = res.sb3!.json.targets.find((t: any) => t.name === "Hero");
+  assert.deepEqual(hero.sounds.map((s: any) => [s.name, s.dataFormat, s.rate, s.sampleCount]), [["jump", "wav", 22050, 100]]);
+  const vm = new VM();
+  await vm.loadProject(Buffer.from(await writeSb3(res.sb3!)));
+  assert.equal(vm.runtime.getSpriteTargetByName("Hero").sprite.sounds[0].name, "jump");
+  const bad = build({ sources: { "Hero.ts": `whenFlag(() => { playSound("jmup"); });` }, images: { "Hero/jump.wav": wav }, base: emptyProject() }, libs);
+  assert.match(bad.diagnostics[0].message, /not assignable/);
+});
+
+test("large sources are split into comments Scratch accepts, and read back", async () => {
+  const big = `// ${"x".repeat(20000)}\nwhenFlag(() => {});\n`;
+  const res = compile({ "Stage.ts": big });
+  const comments = Object.values(res.sb3!.json.targets[0].comments) as any[];
+  assert.ok(comments.length >= 3 && comments.every((c) => c.text.length <= 8000));
+  assert.deepEqual(sourcesOf(res.sb3!.json), { "Stage.ts": big });
+  const vm = new VM();
+  await vm.loadProject(Buffer.from(await writeSb3(res.sb3!))); // throws if Scratch's validator rejects it
 });
 
 test("type errors and unsupported syntax are reported with positions", () => {

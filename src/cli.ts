@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import fs from "node:fs";
 import path from "node:path";
-import { build, emptyProject, IMAGE_EXT, readSb3, writeSb3, Libs } from "./compiler";
+import { build, emptyProject, IMAGE_EXT, readSb3, SOUND_EXT, writeSb3, Libs } from "./compiler";
 
 const libs = (): Libs => ({
   es5: fs.readFileSync(require.resolve("typescript/lib/lib.es5.d.ts"), "utf8"),
@@ -41,8 +41,8 @@ function init(dir: string) {
   write("src/Stage.ts", STAGE);
   write("src/Player.ts", SPRITE);
   write("tsconfig.json", JSON.stringify(TSCONFIG, null, 2) + "\n");
-  write(".gitignore", "dist/\n.tts/\n");
-  console.log(`Created project in ${dir}. Put costume images in src/<SpriteName>/, then run: tts build`);
+  write(".gitignore", "node_modules/\ndist/\n.tts/\n");
+  console.log(`Created project in ${dir}. Put costume images and wav/mp3 sounds in src/<SpriteName>/, then run: tts build`);
 }
 
 async function buildDir(dir: string, out?: string) {
@@ -53,7 +53,7 @@ async function buildDir(dir: string, out?: string) {
     if (e.isFile() && e.name.endsWith(".ts")) sources[e.name] = fs.readFileSync(path.join(src, e.name), "utf8");
     if (e.isDirectory())
       for (const f of fs.readdirSync(path.join(src, e.name)))
-        if (IMAGE_EXT.includes(f.split(".").pop()!.toLowerCase())) images[`${e.name}/${f}`] = fs.readFileSync(path.join(src, e.name, f));
+        if ([...IMAGE_EXT, ...SOUND_EXT].includes(f.split(".").pop()!.toLowerCase())) images[`${e.name}/${f}`] = fs.readFileSync(path.join(src, e.name, f));
   }
   const basePath = path.join(dir, "project.sb3");
   const base = fs.existsSync(basePath) ? await readSb3(fs.readFileSync(basePath)) : emptyProject();

@@ -47,7 +47,7 @@ npm run build
 4. Click it. The code editor covers the blocks area; the stage and sprite list stay visible.
    - Click a sprite tile to start coding it. Sprites without a code file keep their hand-made blocks.
    - **Build & Run** (Ctrl+S) compiles, loads the result into the editor, and clicks the green flag.
-   - Drop image files on a sprite tile to add them as costumes (on the Stage: backdrops).
+   - Drop image files on a sprite tile to add costumes (on the Stage: backdrops), or wav/mp3 files to add sounds.
    - Your source code is saved *inside the project* (a collapsed Stage comment), so **File → Save** keeps it.
 
 ### Standalone web editor
@@ -76,7 +76,7 @@ my-game/
   src/
     Stage.ts         the stage
     Player.ts        one file per sprite (file name = sprite name)
-    Player/          images here become Player's costumes (png, svg, jpg)
+    Player/          images become Player's costumes; wav/mp3 files become its sounds
       idle.png
       run1.png
     Stage/           images here become backdrops
@@ -147,7 +147,7 @@ npm run typecheck
 ```
 
 - `npm test` compiles programs and runs them in a headless `scratch-vm`, checking the resulting variables and sprite state.
-- `npm run dev` serves the editor with the same CSP Chrome applies to extension pages. `http://localhost:5180/test/harness.html` is a fake Scratch editor (real `scratch-vm` plus the real `bridge.js` and `content.js`) for testing the extension end to end. Run `npx tts build examples/catcher` first.
+- `npm run dev` serves the editor with the same CSP Chrome applies to extension pages. `http://localhost:5180/test/harness.html` is a fake Scratch editor (real `scratch-vm` plus the real `bridge.js` and `content.js`) for testing the extension end to end. Run `npx tts build examples/catcher` first. `http://localhost:5180/test/player.html?project=<url>` plays an `.sb3` with the real Scratch renderer, for testing games with mouse and keyboard.
 
 | Path | What it is |
 |---|---|
