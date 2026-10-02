@@ -1,0 +1,98 @@
+/* Scratch look: purple menu bar, blue accents, rounded "block" shapes, Helvetica. */
+:root {
+  --scratch-purple: #855cd6;
+  --scratch-purple-dark: #774dcb;
+  --scratch-blue: #4c97ff;
+  --scratch-text: #575e75;
+  --scratch-pane: #e9f1fc;
+
+  --ifm-color-primary: #855cd6;
+  --ifm-color-primary-dark: #774dcb;
+  --ifm-color-primary-darker: #6f45c4;
+  --ifm-color-primary-darkest: #5b38a3;
+  --ifm-color-primary-light: #9473dc;
+  --ifm-color-primary-lighter: #9b7cdf;
+  --ifm-color-primary-lightest: #b29be6;
+  --ifm-font-family-base: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --ifm-heading-font-weight: 700;
+  --ifm-font-color-base: var(--scratch-text);
+  --ifm-heading-color: var(--scratch-text);
+  --ifm-global-radius: 0.5rem;
+  --ifm-code-font-size: 92%;
+  --ifm-code-border-radius: 0.25rem;
+  --ifm-navbar-background-color: var(--scratch-purple);
+  --ifm-navbar-link-color: #fff;
+  --ifm-navbar-link-hover-color: #fff;
+  --ifm-footer-background-color: #3d2a6b;
+  --docusaurus-highlighted-code-line-bg: rgba(133, 92, 214, 0.12);
+  /* Infima leaves this transparent; dark-OS browsers would then show a black canvas */
+  --ifm-background-color: #ffffff;
+  --ifm-background-surface-color: #ffffff;
+}
+html[data-theme="light"] { color-scheme: light; }
+body { background-color: var(--ifm-background-color); }
+
+[data-theme="dark"] {
+  --ifm-color-primary: #a98ae8;
+  --ifm-color-primary-dark: #9877e3;
+  --ifm-color-primary-darker: #906de1;
+  --ifm-color-primary-darkest: #7651d6;
+  --ifm-color-primary-light: #ba9fed;
+  --ifm-color-primary-lighter: #c2a9ef;
+  --ifm-color-primary-lightest: #d9c9f5;
+  --ifm-font-color-base: #e6e8f0;
+  --ifm-heading-color: #fff;
+  --ifm-background-color: #1e1b2e;
+  --ifm-navbar-background-color: #5b3fa6;
+  --ifm-footer-background-color: #15121f;
+  --scratch-pane: #2a2540;
+}
+
+.navbar { box-shadow: none; }
+.navbar__title, .navbar__link { font-weight: 700; font-size: 0.9rem; }
+.navbar__link--active { color: #fff; background: rgba(0, 0, 0, 0.15); border-radius: 0.5rem; }
+.navbar__link:hover { background: rgba(0, 0, 0, 0.15); border-radius: 0.5rem; }
+.navbar .navbar__toggle, .navbar .clean-btn { color: #fff; }
+.navbar__search-input { background: rgba(255, 255, 255, 0.95); }
+
+/* Sidebar items as tabs, like Scratch's category picker */
+.menu__link { border-radius: 0.5rem; font-weight: 600; }
+.menu__link--active:not(.menu__link--sublist) { background: var(--scratch-purple); color: #fff; }
+[data-theme="dark"] .menu__link--active:not(.menu__link--sublist) { background: #5b3fa6; }
+
+.button { border-radius: 2rem; font-weight: 700; }
+.button--primary { box-shadow: 0 0 0 4px hsla(260, 60%, 60%, 0.25); }
+
+/* Images in docs look like Scratch panes */
+.markdown img {
+  border-radius: 0.5rem;
+  border: 1px solid hsla(0, 0%, 0%, 0.15);
+  box-shadow: 0 4px 16px rgba(87, 94, 117, 0.15);
+}
+
+.markdown h2 { border-bottom: 2px solid var(--scratch-pane); padding-bottom: 0.3rem; }
+
+/* Step badges for tutorials: <span className="step">1</span> */
+.step {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 1.75rem; height: 1.75rem; margin-right: 0.5rem; border-radius: 50%;
+  background: var(--scratch-blue); color: #fff; font-size: 0.9rem; font-weight: 700; vertical-align: middle;
+}
+
+/* Scratch-block chips used in tables: <span className="blk motion">move</span> */
+.blk {
+  display: inline-block; padding: 0.1rem 0.6rem; border-radius: 0.3rem; color: #fff; font-size: 0.8rem; font-weight: 700; white-space: nowrap;
+}
+.blk.motion { background: #4c97ff; }
+.blk.looks { background: #9966ff; }
+.blk.sound { background: #cf63cf; }
+.blk.events { background: #ffbf00; color: #fff; }
+.blk.control { background: #ffab19; }
+.blk.sensing { background: #5cb1d6; }
+.blk.operators { background: #59c059; }
+.blk.variables { background: #ff8c1a; }
+.blk.lists { background: #ff661a; }
+.blk.myblocks { background: #ff6680; }
+.blk.pen { background: #0fbd8c; }
+
+kbd { border-radius: 0.3rem; }

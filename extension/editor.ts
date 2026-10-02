@@ -154,6 +154,7 @@ function loadProject(sb3: Sb3) {
   files = sourcesOf(sb3.json) ?? {};
   current = null;
   refreshTypes();
+  Object.keys(files).forEach(modelFor); // every file needs a model so cross-file imports resolve
   const first = Object.keys(files)[0];
   if (first) open(first);
   else { editor.setModel(null); renderTiles(); renderTabs(); }

@@ -1,6 +1,7 @@
 {
   "version": "0.0.1",
   "configurations": [
-    { "name": "editor", "runtimeExecutable": "node", "runtimeArgs": ["scripts/serve.mjs"], "port": 5180 }
+    { "name": "editor", "runtimeExecutable": "node", "runtimeArgs": ["scripts/serve.mjs"], "port": 5180 },
+    { "name": "site", "runtimeExecutable": "npm", "runtimeArgs": ["--prefix", "website", "run", "serve", "--", "--port", "3010", "--no-open"], "port": 3010 }
   ]
 }

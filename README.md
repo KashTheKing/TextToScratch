@@ -5,6 +5,7 @@ Draw sprites and backdrops in Scratch (or drop image files in a folder); write a
 
 - Full type checking by the real TypeScript compiler, so typos in sprite, costume, backdrop and sound names are compile errors.
 - Output is a normal Scratch project: open it in Scratch or TurboWarp, share it, remix it.
+- Docs, tutorial and web editor: **https://kashtheking.com/text-to-scratch/**
 - Three ways to use it: a **browser extension** that adds a code editor inside the Scratch editor, a **standalone web editor**, and a **CLI** for VS Code users.
 
 ```ts
