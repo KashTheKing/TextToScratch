@@ -117,6 +117,10 @@ export function build(input: BuildInput, libs: Libs): BuildResult {
     json.targets.push(s.target);
     files[s.file[0]] = s.file[1];
   }
+  // A sprite named "Thumbnail" is always the top layer: it's the title card (and the Scratch thumbnail,
+  // which is captured from the stage when the project is saved) until the game hides it.
+  const thumb = find("Thumbnail");
+  if (thumb) thumb.layerOrder = Math.max(...json.targets.map((t: any) => t.layerOrder ?? 0)) + 1;
 
   // image folders -> costumes (replace same name, else append; drop the placeholder once real art exists)
   const placeholders = new Set([newSprite("", 0).target.costumes[0].assetId, emptyProject().json.targets[0].costumes[0].assetId]);

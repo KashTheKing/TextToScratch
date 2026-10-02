@@ -10,7 +10,7 @@ const project = new URLSearchParams(location.search).get("project") ?? "/example
 window.ready = fetch(project + "?v=" + Date.now())
   .then((r) => r.arrayBuffer())
   .then((b) => vm.loadProject(b))
-  .then(() => vm.greenFlag());
+  .then(() => new URLSearchParams(location.search).has("noflag") || vm.greenFlag()); // ?noflag: show the project as loaded
 
 document.getElementById("flag").onclick = () => vm.greenFlag();
 document.getElementById("stop").onclick = () => vm.stopAll();

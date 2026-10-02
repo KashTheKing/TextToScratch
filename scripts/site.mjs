@@ -22,6 +22,11 @@ copy("extension/editor.css", `${s}/editor/editor.css`);
 copy("extension/build/editor.js", `${s}/editor/build/editor.js`);
 copy("extension/vendor", `${s}/editor/vendor`);
 for (const ex of EXAMPLES) copy(`examples/${ex}/dist/${ex}.sb3`, `${s}/examples/${ex}.sb3`);
+// Block Puzzle lives in its own repo next to this one
+if (fs.existsSync("../block-puzzle")) {
+  run("node ../TextToScratch/dist/cli.js build .", "../block-puzzle");
+  copy("../block-puzzle/dist/block-puzzle.sb3", `${s}/examples/block-puzzle.sb3`);
+}
 
 // downloadable extension (unpacked-loadable folder, zipped)
 const JSZip = (await import("jszip")).default;
