@@ -12,6 +12,9 @@
 .ts { background: #fff; color: #3178c6; padding: 0 0.35rem; border-radius: 0.4rem; }
 .scratch { background: #ffab19; color: #fff; padding: 0 0.35rem; border-radius: 0.4rem; }
 .buttons { display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 1.5rem; }
+.buttons :global(.button--outline) { color: #fff; border: 2px solid #fff; background: transparent; }
+.buttons :global(.button--outline:hover) { color: #855cd6; background: #fff; }
+.buttons :global(.button--secondary:not(.button--outline)) { color: #855cd6; background: #fff; border-color: #fff; }
 .heroCode { min-width: 0; }
 .heroCode :global(.theme-code-block) { box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3); margin: 0; }
 
