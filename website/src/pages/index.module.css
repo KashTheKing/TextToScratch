@@ -32,7 +32,20 @@
 .shot { max-width: 1150px; margin: 4rem auto; padding: 0 1rem; text-align: center; }
 .shot img { border-radius: 0.75rem; border: 1px solid hsla(0, 0%, 0%, 0.15); box-shadow: 0 12px 40px rgba(87, 94, 117, 0.25); margin-top: 1rem; }
 
+.community {
+  max-width: 1150px; margin: 0 auto 4rem; padding: 1.75rem 2rem; border-radius: 1rem;
+  display: flex; gap: 1.5rem; align-items: center;
+  background: linear-gradient(120deg, #5865f2, #855cd6); color: #fff;
+  box-shadow: 0 12px 40px rgba(88, 101, 242, 0.3);
+}
+.community img { border-radius: 1.25rem; flex: none; }
+.community div { flex: 1; }
+.community h2 { color: #fff; margin-bottom: 0.35rem; }
+.community p { margin: 0; opacity: 0.95; }
+.discord, .discord:hover { color: #5865f2; background: #fff; border: 2px solid #fff; flex: none; }
+
 @media (max-width: 900px) {
+  .community { flex-direction: column; text-align: center; margin: 0 1rem 3rem; }
   .heroInner { grid-template-columns: 1fr; }
   .heroText h1 { font-size: 2.4rem; }
   .features { grid-template-columns: 1fr 1fr; }

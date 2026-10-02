@@ -30,6 +30,13 @@ const config: Config = {
   plugins: [require.resolve("docusaurus-lunr-search")],
 
   themeConfig: {
+    announcementBar: {
+      id: "discord",
+      content: `💬 TextToScratch has a Discord! <a target="_blank" rel="noopener noreferrer" href="https://discord.gg/AnsrYzRXar">Join the community</a> for help, ideas and game sharing.`,
+      backgroundColor: "#5865f2",
+      textColor: "#ffffff",
+      isCloseable: true,
+    },
     colorMode: { defaultMode: "light", respectPrefersColorScheme: false },
     navbar: {
       title: "TextToScratch",
@@ -38,6 +45,7 @@ const config: Config = {
         { type: "docSidebar", sidebarId: "docs", position: "left", label: "Guide" },
         { to: "/docs/reference", label: "API", position: "left" },
         { href: "https://scratch.mit.edu/studios/52025574", label: "Scratch Studio", position: "right" },
+        { href: "https://discord.gg/AnsrYzRXar", label: "Discord", position: "right" },
         { href: "pathname:///text-to-scratch/editor/", label: "Open Editor", position: "right" },
       ],
     },
@@ -62,6 +70,7 @@ const config: Config = {
         {
           title: "More",
           items: [
+            { label: "Discord", href: "https://discord.gg/AnsrYzRXar" },
             { label: "Official Scratch studio", href: "https://scratch.mit.edu/studios/52025574" },
             { label: "GitHub", href: "https://github.com/KashTheKing/TextToScratch" },
             { label: "Support", to: "/support" },

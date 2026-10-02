@@ -75,6 +75,14 @@ export default function Home(): ReactNode {
           <p>Your stage and sprites stay on the right. Your code goes where the blocks used to be.</p>
           <img src={useBaseUrl("/img/guide/build-run.jpg")} alt="The TextToScratch editor open inside the Scratch editor" />
         </section>
+        <section className={styles.community}>
+          <img src={useBaseUrl("/img/community.png")} alt="" width={96} height={96} />
+          <div>
+            <h2>Join the community</h2>
+            <p>Share what you are building, get help when you are stuck, request features and play other people&apos;s games on the TextToScratch Discord.</p>
+          </div>
+          <Link className={`button button--lg ${styles.discord}`} href="https://discord.gg/AnsrYzRXar">Join the Discord</Link>
+        </section>
       </main>
     </Layout>
   );

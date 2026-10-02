@@ -47,5 +47,5 @@ Each file is one sprite (`Stage.ts` is the stage). `whenFlag`, `forever`, `keyPr
 Ready? **[Install the extension](./install.md)**, then follow the **[platformer tutorial](./platformer.md)**.
 
 :::tip Play the games
-Every example game is in the official [TextToScratch studio on Scratch](https://scratch.mit.edu/studios/52025574). Made something? Add it there!
+Every example game is in the official [TextToScratch studio on Scratch](https://scratch.mit.edu/studios/52025574). Made something? Add it there, and show it off on the [TextToScratch Discord](https://discord.gg/AnsrYzRXar)!
 :::

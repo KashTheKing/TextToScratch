@@ -1,5 +1,7 @@
 # TextToScratch
 
+[![Discord](https://img.shields.io/badge/Discord-join%20the%20community-5865F2?logo=discord&logoColor=white)](https://discord.gg/AnsrYzRXar) [![Docs](https://img.shields.io/badge/docs-kashtheking.com-855CD6)](https://kashtheking.com/text-to-scratch/)
+
 Write Scratch games in **typed TypeScript** and compile them to real Scratch blocks (`.sb3`).
 Draw sprites and backdrops in Scratch (or drop image files in a folder); write all the logic as code.
 
@@ -194,3 +196,7 @@ npm run typecheck
 | `lib/engine/` | the game engine (`tts/*` modules), written in TextToScratch |
 | `examples/` | example games: catcher, platformer, engine-demo, 3d-demo, multiplayer |
 | `test/player.html`, `test/multiplayer.html` | play an sb3 with the real renderer; two clients over a fake cloud server |
+
+## Community
+
+Questions, ideas, bug reports or a game to show off? Join the **[TextToScratch Discord](https://discord.gg/AnsrYzRXar)**.
