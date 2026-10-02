@@ -38,15 +38,17 @@ export default function Home(): ReactNode {
         <div className={styles.heroInner}>
           <div className={styles.heroText}>
             <h1>
-              Write <span className={styles.ts}>TypeScript</span>.<br />Get <span className={styles.scratch}>Scratch</span>.
+              Write <span className={styles.ts}>TypeScript</span>
+              <br />
+              in <span className={styles.scratch}>Scratch</span>
             </h1>
             <p>
               TextToScratch compiles typed code into real Scratch blocks. Draw your sprites in Scratch, write the logic in text,
               and press <b>Build&nbsp;&amp;&nbsp;Run</b>.
             </p>
             <div className={styles.buttons}>
-              <Link className="button button--lg button--secondary" to="/docs/intro">Get started</Link>
-              <Link className="button button--lg button--outline button--secondary" to="/docs/platformer">Build a platformer</Link>
+              <Link className={`button button--lg ${styles.solid}`} to="/docs/intro">Get started</Link>
+              <Link className={`button button--lg ${styles.outline}`} to="/docs/platformer">Build a platformer</Link>
             </div>
           </div>
           <div className={styles.heroCode}>
