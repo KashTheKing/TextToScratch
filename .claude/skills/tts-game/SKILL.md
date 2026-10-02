@@ -45,7 +45,7 @@ Fix every diagnostic. Output: `examples/<slug>/dist/<slug>.sb3`.
 ## 7. Publish to Scratch (when asked)
 In the user's logged-in Chrome (claude-in-chrome). GUI buttons are flaky in a background tab, so use the APIs:
 1. Navigate to `https://scratch.mit.edu/projects/editor/`. This creates a new project; its id is in the URL.
-2. Inject a hidden `<input type=file aria-label=ttsloader>` whose onchange runs `vm.loadProject(await file.arrayBuffer())` (get `vm` by walking the React fiber of `[class*=stage-wrapper]` up to `memoizedProps.vm`), then `file_upload` the .sb3 to it. Don't call `vm.stop()` first (loading hangs).
+2. Inject a hidden `<input type=file aria-label=ttsloader>` whose onchange runs `vm.loadProject(await file.arrayBuffer())` (get `vm` by walking the React fiber of `[class*=stage-wrapper]` up to `memoizedProps.vm`), then `file_upload` the .sb3 to it. Don't call `vm.stop()` first (loading hangs). When updating an existing project, wait until the editor has finished loading it (10s+) and check `vm.runtime.targets.filter(t=>t.isOriginal)` has exactly one Stage before saving: if the editor finishes loading after you, the projects merge and the save fails with a 500.
 3. Token: `(await fetch("/session/",{headers:{"X-Requested-With":"XMLHttpRequest"}}).then(r=>r.json())).user.token`. CSRF: the `scratchcsrftoken` cookie.
 4. Upload every costume and sound: `POST https://assets.scratch.mit.edu/<assetId>.<dataFormat>` (body `asset.data`, credentials include).
 5. Save: `PUT https://projects.scratch.mit.edu/<id>`, body `vm.toJSON()`, header `x-token`.
