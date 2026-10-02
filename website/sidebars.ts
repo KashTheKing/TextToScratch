@@ -5,7 +5,7 @@ const sidebars: SidebarsConfig = {
     "intro",
     "install",
     "platformer",
-    { type: "category", label: "Language", collapsed: false, items: ["language", "reference", "differences"] },
+    { type: "category", label: "Language", collapsed: false, items: ["language", "reference", "differences", "decompile"] },
     {
       type: "category",
       label: "Game engine",

@@ -3,6 +3,8 @@ import { Ctx, Diag, Target } from "./compile";
 import { emptyProject, IMAGE_EXT, makeCostume, makeSound, newSprite, Sb3, SOUND_EXT } from "./project";
 
 export * from "./project";
+export { decompile } from "./decompile";
+export type { DecompileResult } from "./decompile";
 export type { Diag } from "./compile";
 
 export interface BuildInput {

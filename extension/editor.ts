@@ -1,5 +1,5 @@
 // TextToScratch editor: Monaco + in-browser compiler. Runs standalone or embedded (iframe) in the Scratch editor.
-import { build, emptyProject, IMAGE_EXT, readSb3, Sb3, SOUND_EXT, sourcesOf, typesFor, writeSb3, Diag } from "../src/compiler";
+import { build, decompile, emptyProject, IMAGE_EXT, readSb3, Sb3, SOUND_EXT, sourcesOf, typesFor, writeSb3, Diag } from "../src/compiler";
 
 declare const __ES5__: string, __SCRATCH__: string, __WORKERS__: Record<string, string>, __ENGINE__: Record<string, string>;
 declare const require: any;
@@ -149,9 +149,16 @@ function refreshTypes() {
 function loadProject(sb3: Sb3) {
   base = sb3;
   images = {};
+  const stored = sourcesOf(sb3.json);
+  // a project made with blocks: convert them so the user can continue in text
+  if (!stored && sb3.json.targets.some((t: any) => Object.keys(t.blocks ?? {}).length)) return convertBlocks();
+  setFiles(stored ?? {});
+}
+
+function setFiles(next: Record<string, string>) {
   for (const m of models.values()) m.dispose();
   models.clear();
-  files = sourcesOf(sb3.json) ?? {};
+  files = next;
   current = null;
   refreshTypes();
   Object.keys(files).forEach(modelFor); // every file needs a model so cross-file imports resolve
@@ -160,8 +167,26 @@ function loadProject(sb3: Sb3) {
   else { editor.setModel(null); renderTiles(); renderTabs(); }
 }
 
+/** Blocks -> text: replace the open files with the decompiled project. */
+async function convertBlocks(askFirst = false) {
+  if (askFirst && Object.keys(files).length && !confirm("Replace your text code with code converted from the current blocks?")) return;
+  try {
+    if (embedded && askFirst) base = await readSb3(await ask("get"));
+    const res = decompile(base.json);
+    setFiles(res.sources);
+    showProblems(res.warnings.map((w) => {
+      const m = w.match(/^(.+?\.ts)(?::(\d+))?: (.*)$/);
+      return { file: m?.[1] ?? "", line: Number(m?.[2] ?? 1), col: 1, message: m?.[3] ?? w };
+    }), true);
+    status(`Converted blocks to text${res.warnings.length ? ` (${res.warnings.length} warning(s))` : ""} — Build & Run to use it`, "ok");
+  } catch (e: any) {
+    console.error(e);
+    status("Couldn't convert blocks: " + e.message, "err");
+  }
+}
+
 // ---------- build ----------
-function showProblems(diags: Diag[]) {
+function showProblems(diags: Diag[], warn = false) {
   const box = $("problems");
   box.replaceChildren();
   for (const m of models.values()) monaco.editor.setModelMarkers(m, "tts", []);
@@ -169,7 +194,7 @@ function showProblems(diags: Diag[]) {
   for (const d of diags) {
     const file = d.file.replace(/^\/src\//, "");
     const row = document.createElement("div");
-    row.className = "problem";
+    row.className = "problem" + (warn ? " warn" : "");
     row.innerHTML = `<b>${file}:${d.line}:${d.col}</b> `;
     row.append(d.message);
     row.onclick = () => {
@@ -181,7 +206,7 @@ function showProblems(diags: Diag[]) {
     box.append(row);
     if (files[file] !== undefined) {
       const list = byFile.get(file) ?? [];
-      list.push({ severity: monaco.MarkerSeverity.Error, message: d.message, startLineNumber: d.line, startColumn: d.col, endLineNumber: d.line, endColumn: d.col + 1 });
+      list.push({ severity: warn ? monaco.MarkerSeverity.Warning : monaco.MarkerSeverity.Error, message: d.message, startLineNumber: d.line, startColumn: d.col, endLineNumber: d.line, endColumn: d.col + 1 });
       byFile.set(file, list);
     }
   }
@@ -285,6 +310,7 @@ $("build").onclick = () => doBuild(false);
 $("run").onclick = () => doBuild(true);
 $("stop").onclick = () => (embedded ? ask("stop") : undefined);
 $("download").onclick = download;
+$("convert").onclick = () => convertBlocks(true);
 $("close").onclick = () => window.parent.postMessage({ tts: "close" }, "*");
 $("add").onclick = () => {
   const name = prompt("Sprite name:")?.trim();
