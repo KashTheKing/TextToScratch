@@ -4,6 +4,7 @@ const Storage = window.ScratchStorage.ScratchStorage ?? window.ScratchStorage;
 const vm = (window.vm = new VirtualMachine());
 vm.attachRenderer(new ScratchRender(canvas));
 vm.attachStorage(new Storage());
+vm.attachV2BitmapAdapter(new (window.ScratchSVGRenderer.BitmapAdapter)());
 vm.start();
 
 const project = new URLSearchParams(location.search).get("project") ?? "/examples/platformer/dist/platformer.sb3";

@@ -9,6 +9,7 @@ const clients = (window.clients = [0, 1].map((i) => {
   const client = { vm };
   vm.attachRenderer(new ScratchRender(document.getElementById(`c${i}`)));
   vm.attachStorage(new Storage());
+  vm.attachV2BitmapAdapter(new (window.ScratchSVGRenderer.BitmapAdapter)());
   client.provider = {
     updateVariable(name, value) {
       window.cloudLog.push([i, name, String(value)]);
