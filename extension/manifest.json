@@ -1,0 +1,26 @@
+{
+  "manifest_version": 3,
+  "name": "TextToScratch",
+  "version": "0.1.0",
+  "description": "Write Scratch projects in typed TypeScript and compile them to blocks.",
+  "content_scripts": [
+    {
+      "matches": ["https://scratch.mit.edu/projects/*", "https://turbowarp.org/*"],
+      "js": ["bridge.js"],
+      "world": "MAIN",
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://scratch.mit.edu/projects/*", "https://turbowarp.org/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["editor.html", "editor.css", "build/*", "vendor/*"],
+      "matches": ["https://scratch.mit.edu/*", "https://turbowarp.org/*"]
+    }
+  ],
+  "browser_specific_settings": { "gecko": { "id": "texttoscratch@example.com", "strict_min_version": "128.0" } }
+}

@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>TextToScratch</title>
+  <link rel="stylesheet" href="editor.css">
+  <link rel="stylesheet" href="vendor/vs/editor/editor.main.css">
+</head>
+<body>
+  <header class="menu-bar">
+    <div class="logo"><span class="brace">{ }</span> TextToScratch</div>
+    <div class="divider"></div>
+    <button id="build" class="menu-item" title="Compile (Ctrl+B)">Build</button>
+    <button id="run" class="menu-item" title="Build and click the green flag (Ctrl+S)">
+      <svg viewBox="0 0 16 17" width="18" height="18"><path fill="#4CBF56" stroke="#45993D" d="M15.6 3.4c-.1-.1-.3-.1-.5-.1-1.5.7-2.5 1-3.6 1-1 0-1.9-.3-2.9-.7-1-.4-2-.8-3.2-.8-.9 0-1.8.2-2.7.5V2.1c0-.4-.3-.7-.7-.7S1.3 1.7 1.3 2.1v13.4c0 .4.3.7.7.7s.7-.3.7-.7v-4.2c.8-.3 1.6-.5 2.4-.5 1 0 1.9.3 2.9.7 1 .4 2 .8 3.2.8 1.3 0 2.5-.4 4.1-1.1.2-.1.3-.3.3-.5V3.9c.1-.2 0-.4-.1-.5z"/></svg>
+      Build &amp; Run
+    </button>
+    <button id="stop" class="menu-item" title="Stop">
+      <svg viewBox="0 0 14 14" width="16" height="16"><path fill="#EC5959" stroke="#B84848" d="M4.3.5h5.4l3.8 3.8v5.4l-3.8 3.8H4.3L.5 9.7V4.3z"/></svg>
+    </button>
+    <div class="spacer"></div>
+    <span id="status" class="status"></span>
+    <label class="menu-item standalone-only" title="Open a .sb3 project">Open .sb3<input id="open" type="file" accept=".sb3" hidden></label>
+    <button id="download" class="menu-item" title="Download the compiled project">Download .sb3</button>
+    <button id="close" class="menu-item embedded-only" title="Back to blocks">✕</button>
+  </header>
+  <main>
+    <aside class="sprite-pane">
+      <div class="pane-header">Sprites <button id="add" class="add" title="New sprite file">+</button></div>
+      <div id="tiles" class="tiles"></div>
+      <p class="hint">Drop images on a sprite to add costumes (on the Stage: backdrops).</p>
+    </aside>
+    <section class="code-pane">
+      <div id="tabs" class="tabs"></div>
+      <div id="monaco" class="monaco"></div>
+      <div id="problems" class="problems"></div>
+    </section>
+  </main>
+  <script src="build/editor.js"></script>
+  <script src="vendor/vs/loader.js"></script>
+</body>
+</html>
