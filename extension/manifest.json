@@ -3,24 +3,52 @@
   "name": "TextToScratch",
   "version": "0.1.0",
   "description": "Write Scratch projects in typed TypeScript and compile them to blocks.",
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
   "content_scripts": [
     {
-      "matches": ["https://scratch.mit.edu/projects/*", "https://turbowarp.org/*"],
-      "js": ["bridge.js"],
+      "matches": [
+        "https://scratch.mit.edu/projects/*",
+        "https://turbowarp.org/*"
+      ],
+      "js": [
+        "bridge.js"
+      ],
       "world": "MAIN",
       "run_at": "document_idle"
     },
     {
-      "matches": ["https://scratch.mit.edu/projects/*", "https://turbowarp.org/*"],
-      "js": ["content.js"],
+      "matches": [
+        "https://scratch.mit.edu/projects/*",
+        "https://turbowarp.org/*"
+      ],
+      "js": [
+        "content.js"
+      ],
       "run_at": "document_idle"
     }
   ],
   "web_accessible_resources": [
     {
-      "resources": ["editor.html", "editor.css", "build/*", "vendor/*"],
-      "matches": ["https://scratch.mit.edu/*", "https://turbowarp.org/*"]
+      "resources": [
+        "editor.html",
+        "editor.css",
+        "build/*",
+        "vendor/*"
+      ],
+      "matches": [
+        "https://scratch.mit.edu/*",
+        "https://turbowarp.org/*"
+      ]
     }
   ],
-  "browser_specific_settings": { "gecko": { "id": "texttoscratch@example.com", "strict_min_version": "128.0" } }
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "texttoscratch@example.com",
+      "strict_min_version": "128.0"
+    }
+  }
 }

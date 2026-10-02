@@ -4,3 +4,4 @@ extension/build/
 extension/vendor/
 .tts/
 test/fixtures/
+store/*.zip
