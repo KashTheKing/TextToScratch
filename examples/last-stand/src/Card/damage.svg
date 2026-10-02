@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="170" viewBox="0 0 128 170"><rect x="4" y="6" width="120" height="160" rx="14" fill="#2A1B3D" opacity=".35"/><rect x="2" y="2" width="120" height="160" rx="14" fill="#FFF" stroke="#2A1B3D" stroke-width="4"/>
+<rect x="10" y="10" width="104" height="84" rx="10" fill="#FF8787"/><g transform="translate(62 52) scale(2.2) translate(-18 -18)"><path d="M18 4 l4 9 l10 1 l-7 7 l2 10 l-9 -5 l-9 5 l2 -10 l-7 -7 l10 -1z" fill="#FFE066" stroke="#2A1B3D" stroke-width="2" stroke-linejoin="round"/></g>
+<text x="62" y="122" font-family="Marker" font-size="20" text-anchor="middle" fill="#2A1B3D">POWER</text>
+<text x="62" y="146" font-family="Sans Serif" font-weight="bold" font-size="12" text-anchor="middle" fill="#495057">+1 bullet damage</text></svg>
