@@ -8,6 +8,8 @@ const config: Config = {
   favicon: "img/favicon.svg",
   url: "https://kashtheking.com",
   baseUrl: "/text-to-scratch/",
+  // GitHub Pages redirects /page to /page/ (over http, since HTTPS isn't enforced): link to /page/ directly
+  trailingSlash: true,
   organizationName: "KashTheKing",
   projectName: "TextToScratch",
   onBrokenLinks: "throw",
