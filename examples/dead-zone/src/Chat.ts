@@ -19,8 +19,16 @@ whenFlag(() => {
   goTo(-150, 150);
   me.visible = true;
   say("");
+  showUntil = 0;
   forever(() => {
     if (game.started && Net.session.slot > 0) {
+      if (game.chatSend > 0) {
+        // phrase picked on the touch chat menu
+        Net.sendMessage(game.chatSend - 1);
+        say(`You: ${Net.QUICK_CHAT[game.chatSend - 1]}`);
+        showUntil = timer() + 2.5;
+        game.chatSend = 0;
+      }
       trySend("z", 0);
       trySend("x", 1);
       trySend("c", 2);

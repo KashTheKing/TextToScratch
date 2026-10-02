@@ -347,6 +347,91 @@ addY("msg_got_shotgun", svg(300, 30, T(150, 22, 20, "SHOTGUN! (Q to switch)", "#
 addY("msg_got_rifle", svg(300, 30, T(150, 22, 20, "ASSAULT RIFLE! (Q to switch)", "#9BE07A")));
 addY("minimap_dot", svg(4, 4, `<rect width="4" height="4" fill="#fff"/>`));
 
+// ---------------------------------------------------------------- round 2: power-ups, machines, box, perks, weapons
+const puSvg = (col, inner) => svg(64, 64, `<circle cx="32" cy="32" r="31" fill="url(#gw)"/><circle cx="32" cy="32" r="19" fill="#10140C" stroke="${col}" stroke-width="3"/>${inner}`, radial("gw", col, col, 0.9, 0));
+const PU = [
+  ["maxammo", "#F2C84A", `<g fill="#F2C84A" stroke="#3A2A08" stroke-width="1"><path d="M22 42 v-12 q3 -8 6 0 v12z"/><path d="M29 42 v-14 q3 -8 6 0 v14z"/><path d="M36 42 v-12 q3 -8 6 0 v12z"/></g>`],
+  ["insta", "#E8E8E0", `<path d="M32 18 q12 0 12 12 q0 6 -4 8 v6 h-16 v-6 q-4 -2 -4 -8 q0 -12 12 -12z" fill="#ECEAE0"/><circle cx="27" cy="30" r="3.5" fill="#10140C"/><circle cx="37" cy="30" r="3.5" fill="#10140C"/><path d="M28 44 v-4 M32 44 v-4 M36 44 v-4" stroke="#10140C" stroke-width="1.5"/>`],
+  ["double", "#7CE05A", `<text x="32" y="40" font-family="Sans Serif" font-weight="bold" font-size="20" text-anchor="middle" fill="#9CF07A">x2</text>`],
+  ["nuke", "#FF7A2A", `<circle cx="32" cy="32" r="4" fill="#FFD23A"/><g fill="#FFD23A"><path d="M32 32 L24 18 A16 16 0 0 1 40 18Z"/><path d="M32 32 L48 32 A16 16 0 0 1 40 46Z"/><path d="M32 32 L24 46 A16 16 0 0 1 16 32Z"/></g>`],
+  ["carpenter", "#5AB0F0", `<path d="M22 20 h16 l4 5 h-6 v-2 h-8 v2 h-6z" fill="#B8C4CC" stroke="#203040"/><rect x="29" y="25" width="5" height="22" rx="1" fill="#A8743A" stroke="#40280C"/>`],
+  ["firesale", "#F04A3A", `<text x="32" y="42" font-family="Sans Serif" font-weight="bold" font-size="24" text-anchor="middle" fill="#FF8A6A">$</text>`],
+];
+for (const [n, c, inner] of PU) addY(`pu_${n}`, puSvg(c, inner));
+const ANN = ["MAX AMMO!", "INSTA-KILL!", "DOUBLE POINTS!", "KA-BOOM!", "CARPENTER!", "FIRE SALE!"];
+ANN.forEach((t, i) => addY(`ann_${i}`, svg(380, 60, T(190, 48, 44, t, PU[i][1], "middle", "", "Marker"))));
+// perk machines: Juggernog, Quick Revive, Speed Cola, Double Tap, Stamin-Up
+const PERK = [["JUGGER-NOG", "#B02A2A", "#5A0E0E", "J"], ["QUICK REVIVE", "#3A8AD8", "#123A64", "Q"], ["SPEED COLA", "#3AA84A", "#0E4A18", "S"], ["DOUBLE TAP", "#C8A02A", "#5A440A", "D"], ["STAMIN-UP", "#E0782A", "#6A300A", "U"]];
+const machine = ([label, col, dark, letter], i) => svg(160, 160,
+  `<ellipse cx="80" cy="156" rx="44" ry="5" fill="#000" opacity=".4"/><rect x="40" y="14" width="80" height="142" rx="8" fill="url(#mb${i})" stroke="#0C0C0C" stroke-width="3"/>` +
+  `<rect x="46" y="20" width="68" height="22" rx="4" fill="#FFF6D0" stroke="${dark}" stroke-width="2"/>` + T(80, 36, 11, label, dark, "middle", 'stroke-width="0"') +
+  `<circle cx="80" cy="72" r="20" fill="${dark}" stroke="#FFF6D0" stroke-width="3"/>` + T(80, 81, 24, letter, "#FFF6D0") +
+  `<rect x="52" y="100" width="56" height="30" rx="4" fill="#10100E" stroke="#FFF6D0" stroke-opacity=".5"/><rect x="58" y="106" width="10" height="20" rx="2" fill="${col}"/><rect x="72" y="106" width="10" height="20" rx="2" fill="${col}"/><rect x="86" y="106" width="10" height="20" rx="2" fill="${col}"/>` +
+  `<rect x="60" y="138" width="40" height="10" rx="2" fill="#000"/>`,
+  `<linearGradient id="mb${i}" x1="0" x2="1"><stop offset="0" stop-color="${dark}"/><stop offset=".5" stop-color="${col}"/><stop offset="1" stop-color="${dark}"/></linearGradient>`);
+PERK.forEach((p, i) => addY(`mach_perk${i}`, machine(p, i)));
+addY("mach_pap", svg(160, 160,
+  `<ellipse cx="80" cy="156" rx="64" ry="6" fill="#000" opacity=".4"/><rect x="18" y="40" width="124" height="116" rx="10" fill="url(#pp)" stroke="#06040C" stroke-width="3"/>` +
+  `<rect x="30" y="16" width="100" height="28" rx="6" fill="#20123A" stroke="#C8A0FF" stroke-width="2"/>` + T(80, 36, 13, "PACK-A-PUNCH", "#E0C8FF") +
+  `<rect x="38" y="70" width="84" height="26" rx="6" fill="#0A0614"/><rect x="42" y="76" width="76" height="14" rx="4" fill="url(#pg)"/>` +
+  `<circle cx="44" cy="124" r="14" fill="none" stroke="#8A8AA0" stroke-width="5" stroke-dasharray="5 4"/><circle cx="116" cy="124" r="14" fill="none" stroke="#8A8AA0" stroke-width="5" stroke-dasharray="5 4"/>` +
+  `<path d="M66 110 h28 l6 30 h-40z" fill="#2A2A36" stroke="#C8A0FF" stroke-width="1.5"/>`,
+  `<linearGradient id="pp" x1="0" x2="1"><stop offset="0" stop-color="#1A1230"/><stop offset=".5" stop-color="#4A3478"/><stop offset="1" stop-color="#1A1230"/></linearGradient>` +
+  `<linearGradient id="pg" x1="0" x2="1"><stop offset="0" stop-color="#7A3AFF"/><stop offset=".5" stop-color="#E0C0FF"/><stop offset="1" stop-color="#7A3AFF"/></linearGradient>`));
+addY("mach_box", svg(160, 160,
+  `<rect x="56" y="0" width="48" height="104" fill="url(#beam)"/><ellipse cx="80" cy="156" rx="66" ry="6" fill="#000" opacity=".45"/>` +
+  `<path d="M16 112 h128 v44 h-128z" fill="url(#bw)" stroke="#1E1208" stroke-width="3"/><path d="M12 98 h136 l-4 16 h-128z" fill="#5A3A1E" stroke="#1E1208" stroke-width="3"/>` +
+  `<path d="M16 124 h128 M16 140 h128" stroke="#3A2410" stroke-width="2"/>` + T(50, 150, 22, "?", "#9AE8FF") + T(110, 150, 22, "?", "#9AE8FF") + T(80, 112, 13, "?", "#9AE8FF"),
+  shadeGrad("bw", "#7A5432", "#3A2412") + `<linearGradient id="beam" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#9AE8FF" stop-opacity="0"/><stop offset="1" stop-color="#9AE8FF" stop-opacity=".55"/></linearGradient>`));
+PERK.forEach(([, col, dark, letter], i) => addY(`perkicon${i}`, svg(22, 22, `<circle cx="11" cy="11" r="10" fill="${col}" stroke="${dark}" stroke-width="2"/>` + T(11, 16, 13, letter, "#FFF6D0"))));
+// weapon side icons for the mystery box (96 x 40)
+const wicon = (body) => svg(96, 40, `<g stroke="#0A0A0A" stroke-width="1.5">${body}</g>`);
+const WI = [
+  `<rect x="30" y="12" width="40" height="9" rx="2" fill="#4A4E56"/><path d="M56 21 h12 l-4 16 h-10z" fill="#3A2A1A"/>`,
+  `<rect x="4" y="12" width="66" height="6" fill="#33363C"/><rect x="24" y="18" width="22" height="6" fill="#7A5232"/><path d="M70 12 h22 l-6 16 h-18z" fill="#7A5232"/>`,
+  `<rect x="6" y="14" width="56" height="7" fill="#1E2024"/><rect x="30" y="8" width="24" height="5" fill="#3A3D44"/><path d="M42 21 h8 l2 12 h-8z" fill="#2A2C30"/><path d="M62 12 h28 l2 12 h-30z" fill="#2A2C30"/>`,
+  `<rect x="14" y="14" width="44" height="8" fill="#2A2C30"/><rect x="34" y="22" width="7" height="16" fill="#1A1C20"/><path d="M58 14 h22 v6 h-22z" fill="#3A3C42"/>`,
+  `<rect x="4" y="12" width="64" height="9" fill="#2A2C30"/><rect x="30" y="21" width="20" height="14" rx="2" fill="#4A5A3A"/><path d="M68 10 h24 l2 14 h-26z" fill="#3A3C2A"/>`,
+  `<rect x="2" y="16" width="70" height="4" fill="#1E2024"/><rect x="30" y="6" width="30" height="8" rx="4" fill="#111"/><path d="M60 14 h32 l-2 14 h-26z" fill="#5A4A30"/>`,
+  `<rect x="8" y="14" width="56" height="7" fill="#8A7A5A"/><rect x="36" y="21" width="7" height="13" fill="#5A4E3A"/><path d="M64 12 h26 l2 12 h-28z" fill="#7A6A4A"/>`,
+  `<rect x="12" y="12" width="40" height="6" fill="#8A8E96"/><ellipse cx="56" cy="17" rx="9" ry="7" fill="#6A6E76"/><path d="M62 16 h12 l-2 18 h-10z" fill="#5A3A22"/>`,
+  `<rect x="20" y="10" width="44" height="16" rx="8" fill="#C83A2A"/><rect x="6" y="14" width="16" height="8" rx="3" fill="#3AE87A"/><circle cx="34" cy="18" r="4" fill="#3AE87A"/><circle cx="46" cy="18" r="4" fill="#3AE87A"/><path d="M56 24 h10 l-2 14 h-10z" fill="#8A2A1E"/>`,
+];
+WI.forEach((b, i) => addY(`wi_${i}`, wicon(b)));
+addY("wi_teddy", svg(96, 40, `<circle cx="48" cy="24" r="12" fill="#A87A4A" stroke="#3A2410" stroke-width="2"/><circle cx="48" cy="10" r="9" fill="#A87A4A" stroke="#3A2410" stroke-width="2"/><circle cx="40" cy="4" r="4" fill="#A87A4A" stroke="#3A2410"/><circle cx="56" cy="4" r="4" fill="#A87A4A" stroke="#3A2410"/><circle cx="45" cy="9" r="1.5" fill="#000"/><circle cx="51" cy="9" r="1.5" fill="#000"/>`));
+const P2 = (n, t, c = "#F2D16A") => addY(n, svg(380, 30, T(190, 22, 17, t, c)));
+P2("pr_perk0", "Press E for Juggernog [2500]"); P2("pr_perk1", "Press E for Quick Revive [1500]"); P2("pr_perk2", "Press E for Speed Cola [3000]");
+P2("pr_perk3", "Press E for Double Tap [2000]"); P2("pr_perk4", "Press E for Stamin-Up [2000]");
+P2("pr_pap", "Press E to Pack-a-Punch your weapon [5000]"); P2("pr_box", "Press E for the Mystery Box [950]"); P2("pr_box_sale", "FIRE SALE! Press E for the Mystery Box [10]", "#FF8A6A");
+P2("pr_take", "Press E to take the weapon"); P2("pr_revive", "Hold E to revive your teammate", "#9BE07A");
+addY("msg_bleed", svg(380, 60, T(190, 28, 28, "YOU ARE DOWN", "#E85A4A") + T(190, 52, 14, "Crawl and shoot - a teammate can revive you (hold E)", "#F4F1E6")));
+addY("msg_selfrev", svg(380, 40, T(190, 28, 22, "QUICK REVIVE: getting back up...", "#7AB8F0")));
+addY("msg_dead", svg(380, 60, T(190, 28, 28, "YOU BLED OUT", "#E85A4A") + T(190, 52, 15, "You'll respawn at the start of the next wave", "#F4F1E6")));
+addY("msg_spectate", svg(300, 30, T(140, 22, 18, "SPECTATING PLAYER", "#C8C2A8")));
+addY("msg_teddy", svg(380, 30, T(190, 22, 18, "Bye bye! The Mystery Box has moved.", "#E8B87A")));
+addY("msg_revived", svg(300, 30, T(150, 22, 20, "REVIVED!", "#9BE07A")));
+const WN = ["M1911", "SHOTGUN", "ASSAULT RIFLE", "SMG", "LMG", "SNIPER", "BURST RIFLE", "MAGNUM", "RAY GUN"];
+const WP = ["MUSTANG", "REAPER", "ENFORCER", "OVERKILL", "ZEUS CANNON", "LONGSHOT", "TRIPLE THREAT", "HAND CANNON", "PORTER'S X2"];
+WN.forEach((n, i) => addY(`wn_${i}`, svg(150, 20, T(75, 16, 14, n, "#C8C2A8"))));
+WP.forEach((n, i) => addY(`wp_${i}`, svg(150, 20, T(75, 16, 14, n, "#D8A8FF"))));
+addY("fx_ray", svg(64, 64, `<circle cx="32" cy="32" r="28" fill="url(#rg)"/><circle cx="32" cy="32" r="9" fill="#E8FFE8"/>`, radial("rg", "#7AFF8A", "#1AC83A", 0.95, 0)));
+addY("pr_owned", svg(380, 30, T(190, 22, 17, "Already upgraded", "#C8C2A8")));
+
+// ---------------------------------------------------------------- touch controls
+const tbtn = (w, h, inner, col = "#F4F1E6") => svg(w, h, `<rect x="2" y="2" width="${w - 4}" height="${h - 4}" rx="${Math.min(w, h) / 3}" fill="#0B0E10" opacity=".55" stroke="${col}" stroke-width="3"/>${inner}`);
+const arrow = (rot) => tbtn(40, 40, `<path d="M20 9 L31 25 H9Z" fill="#F4F1E6" transform="rotate(${rot} 20 20)"/>`);
+addY("tc_up", arrow(0)); addY("tc_down", arrow(180)); addY("tc_left", arrow(270)); addY("tc_right", arrow(90));
+addY("tc_fire", svg(72, 72, `<circle cx="36" cy="36" r="33" fill="#5A0E0A" opacity=".6" stroke="#FF8A6A" stroke-width="3"/>` + T(36, 42, 16, "FIRE", "#FFD0C0")));
+addY("tc_use", tbtn(52, 36, T(26, 24, 15, "USE", "#F2D16A"), "#F2D16A"));
+addY("tc_reload", tbtn(52, 36, T(26, 24, 14, "RLD", "#F4F1E6")));
+addY("tc_swap", tbtn(52, 36, T(26, 24, 13, "SWAP", "#F4F1E6")));
+addY("tc_auto_off", tbtn(64, 30, T(32, 20, 12, "AUTO: OFF", "#C8C2A8")));
+addY("tc_auto_on", tbtn(64, 30, T(32, 20, 12, "AUTO: ON", "#9BE07A"), "#9BE07A"));
+addY("tc_chat", tbtn(44, 30, T(22, 20, 12, "CHAT", "#F4F1E6")));
+["Hi!", "Good game!", "Follow me!", "Nice!", "Oops!", "Bye!"].forEach((p, i) => addY(`tc_ph${i}`, tbtn(170, 30, T(85, 21, 15, p, "#F4F1E6"))));
+addY("menu_touch_off", tbtn(150, 30, T(75, 20, 13, "TOUCH CONTROLS: OFF", "#C8C2A8")));
+addY("menu_touch_on", tbtn(150, 30, T(75, 20, 13, "TOUCH CONTROLS: ON", "#9BE07A"), "#9BE07A"));
+
 // write the index table for the code
 let ids = "// Generated by scripts/art.mjs: View costume numbers.\n";
 Y.forEach((n, i) => (ids += `export const C_${n.toUpperCase()} = ${idx + 1 + i};\n`));
@@ -386,9 +471,7 @@ const rifle = (fire) => { const k = fire ? 4 : 0; return svg(200, 200,
   `<circle cx="100" cy="${126 + k}" r="12" fill="none" stroke="#0C0D10" stroke-width="5"/><circle cx="100" cy="${126 + k}" r="2" fill="#E8F27A"/>` +
   `<path d="M54 ${150 + k} l-16 50 h24 l12 -48z" fill="url(#m2)" stroke="#000" stroke-width="2"/>` +
   hand(72, 118 + k, 0.85, 1) + hand(134, 188, 1.05, -1), gdefs); };
-out("Gun/a_pistol.svg", pistol(false)); out("Gun/b_pistol_fire.svg", pistol(true));
-out("Gun/c_shotgun.svg", shotgun(false)); out("Gun/d_shotgun_fire.svg", shotgun(true));
-out("Gun/e_rifle.svg", rifle(false)); out("Gun/f_rifle_fire.svg", rifle(true));
+
 const smg = (fire) => { const k = fire ? 3 : 0; return svg(200, 200,
   (fire ? flash(100, 70, 0.9) : "") +
   `<path d="M76 ${140 + k} L92 ${76 + k} L108 ${76 + k} L124 ${140 + k}Z" fill="url(#m2)" stroke="#000" stroke-width="2"/>` +
@@ -397,7 +480,45 @@ const smg = (fire) => { const k = fire ? 3 : 0; return svg(200, 200,
   `<path d="M84 ${120 + k} h12 v82 h-12z" fill="url(#m2)" stroke="#000" stroke-width="2"/>` +
   `<rect x="90" y="${124 + k}" width="20" height="8" fill="#0C0D10"/><circle cx="100" cy="${128 + k}" r="2" fill="#E8F27A"/>` +
   hand(74, 150 + k, 0.8, 1) + hand(134, 188, 1.05, -1), gdefs); };
-out("Gun/g_smg.svg", smg(false)); out("Gun/h_smg_fire.svg", smg(true));
+const flashG = (x, y, s) => `<g transform="translate(${x} ${y}) scale(${s})"><circle r="44" fill="url(#flg)"/><circle r="16" fill="#C8FFC8"/><circle r="7" fill="#FFF"/></g>`;
+const gdefs2 = gdefs + shadeGrad("tn", "#A8956A", "#4E4430") + shadeGrad("rd", "#D84A3A", "#6A1A12") + radial("flg", "#9AFFA0", "#1AC83A", 0.8, 0) +
+  shadeGrad("st", "#8A8E96", "#3A3C42");
+const lmg = (fire) => { const k = fire ? 5 : 0; return svg(200, 200,
+  (fire ? flash(100, 34, 1.2) : "") +
+  `<path d="M66 ${142 + k} L86 ${40 + k} L114 ${40 + k} L134 ${142 + k}Z" fill="url(#m1)" stroke="#000" stroke-width="2"/>` +
+  [0, 1, 2, 3, 4].map((i) => `<ellipse cx="100" cy="${58 + i * 16 + k}" rx="${8 + i * 2}" ry="3" fill="#0C0D10"/>`).join("") +
+  `<path d="M96 ${30 + k} h8 v12 h-8z" fill="#0C0D10"/><path d="M52 ${128 + k} h96 l6 74 h-108z" fill="url(#m2)" stroke="#000" stroke-width="2"/>` +
+  `<rect x="20" y="${136 + k}" width="40" height="44" rx="4" fill="#4A5A3A" stroke="#000" stroke-width="2"/><path d="M26 ${146 + k} h28 M26 ${158 + k} h28" stroke="#2A3420" stroke-width="2"/>` +
+  hand(70, 116 + k, 0.85, 1) + hand(136, 190, 1.05, -1), gdefs2); };
+const sniper = (fire) => { const k = fire ? 8 : 0; return svg(200, 200,
+  (fire ? flash(100, 22, 1.0) : "") +
+  `<path d="M94 ${140 + k} L98 ${26 + k} L102 ${26 + k} L106 ${140 + k}Z" fill="url(#m2)" stroke="#000" stroke-width="1.5"/>` +
+  `<rect x="80" y="${92 + k}" width="40" height="40" rx="8" fill="#15161A" stroke="#000" stroke-width="2"/><circle cx="100" cy="${112 + k}" r="14" fill="#0A1A2A" stroke="#3A3C42" stroke-width="4"/><circle cx="96" cy="${108 + k}" r="4" fill="#5A8AC8" opacity=".7"/>` +
+  `<path d="M60 ${136 + k} h80 l4 66 h-88z" fill="url(#tn)" stroke="#000" stroke-width="2"/><path d="M140 ${130 + k} l18 -6 l4 8 l-18 6z" fill="#1A1C20"/>` +
+  hand(72, 150 + k, 0.8, 1) + hand(134, 190, 1.05, -1), gdefs2); };
+const burst = (fire) => { const k = fire ? 4 : 0; return svg(200, 200,
+  (fire ? flash(100, 40, 0.9) : "") +
+  `<path d="M74 ${140 + k} L90 ${50 + k} L110 ${50 + k} L126 ${140 + k}Z" fill="url(#tn)" stroke="#000" stroke-width="2"/>` +
+  `<path d="M86 ${110 + k} L94 ${60 + k} L106 ${60 + k} L114 ${110 + k}Z" fill="#3A3428"/><rect x="95" y="${40 + k}" width="10" height="12" fill="#0C0D10"/>` +
+  `<path d="M60 ${132 + k} h80 l4 70 h-88z" fill="url(#tn)" stroke="#000" stroke-width="2"/><rect x="88" y="${116 + k}" width="24" height="14" rx="3" fill="#15161A"/><circle cx="100" cy="${123 + k}" r="3" fill="#F2C84A"/>` +
+  hand(72, 118 + k, 0.85, 1) + hand(134, 188, 1.05, -1), gdefs2); };
+const magnum = (fire) => { const k = fire ? 9 : 0; return svg(200, 200,
+  (fire ? flash(100, 46, 1.1) : "") +
+  `<path d="M92 ${120 + k} L96 ${54 + k} L104 ${54 + k} L108 ${120 + k}Z" fill="url(#st)" stroke="#000" stroke-width="2"/><rect x="97" y="${46 + k}" width="6" height="10" fill="#0C0D10"/>` +
+  `<ellipse cx="100" cy="${130 + k}" rx="26" ry="18" fill="url(#st)" stroke="#000" stroke-width="2"/>` +
+  [0, 1, 2, 3, 4, 5].map((i) => `<circle cx="${100 + Math.cos(i) * 15}" cy="${130 + Math.sin(i) * 9 + k}" r="3.5" fill="#1A1C20"/>`).join("") +
+  `<path d="M84 ${146 + k} h32 l6 60 h-44z" fill="#5A3A22" stroke="#000" stroke-width="2"/>` + hand(100, 180, 1.15), gdefs2); };
+const raygun = (fire) => { const k = fire ? 5 : 0; return svg(200, 200,
+  (fire ? flashG(100, 44, 1.2) : "") +
+  `<path d="M80 ${140 + k} L90 ${60 + k} L110 ${60 + k} L120 ${140 + k}Z" fill="url(#rd)" stroke="#000" stroke-width="2"/>` +
+  [0, 1, 2].map((i) => `<ellipse cx="100" cy="${78 + i * 20 + k}" rx="${14 + i * 3}" ry="5" fill="#3AE87A" stroke="#0A5A1A" stroke-width="1.5"/>`).join("") +
+  `<circle cx="100" cy="${56 + k}" r="9" fill="#3AE87A" stroke="#0A5A1A" stroke-width="2"/><circle cx="100" cy="${56 + k}" r="4" fill="#DFFFE0"/>` +
+  `<path d="M70 ${136 + k} q30 -14 60 0 l2 66 h-64z" fill="url(#rd)" stroke="#000" stroke-width="2"/>` + hand(100, 180, 1.1), gdefs2); };
+const GUNS = [["pistol", pistol], ["shotgun", shotgun], ["rifle", rifle], ["smg", smg], ["lmg", lmg], ["sniper", sniper], ["burst", burst], ["magnum", magnum], ["raygun", raygun]];
+GUNS.forEach(([n, f], i) => {
+  out(`Gun/g${String(i * 2).padStart(2, "0")}_${n}.svg`, f(false));
+  out(`Gun/g${String(i * 2 + 1).padStart(2, "0")}_${n}_fire.svg`, f(true));
+});
 
 // ---------------------------------------------------------------- Stage backdrop
 let stars = "";

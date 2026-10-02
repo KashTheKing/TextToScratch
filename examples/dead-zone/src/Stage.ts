@@ -18,6 +18,10 @@ export const game = {
   down: false,
   started: false,
   titleDone: false,
+  dead: false,
+  pap: 0,
+  touch: false,
+  chatSend: 0,
 };
 
 whenFlag(() => {
@@ -25,6 +29,8 @@ whenFlag(() => {
   game.phase = 0;
   game.started = false;
   game.titleDone = false;
+  game.touch = false;
+  game.chatSend = 0;
   forever(() => {
     playSoundUntilDone("wind");
   });
