@@ -3,7 +3,7 @@
   "displayName": "TextToScratch",
   "description": "Build Scratch games in typed TypeScript inside VS Code: IntelliSense, compile errors, a live Scratch game viewer, and .sb3 import/export.",
   "version": "0.1.0",
-  "publisher": "texttoscratch",
+  "publisher": "kashtheking",
   "license": "MIT",
   "icon": "media/icon128.png",
   "repository": {

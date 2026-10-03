@@ -23,7 +23,7 @@ function shot(name) {
 exports.run = async () => {
   const ws = vscode.workspace.workspaceFolders[0].uri.fsPath;
   const dir = path.join(ws, "platformer");
-  const ext = vscode.extensions.getExtension("texttoscratch.texttoscratch");
+  const ext = vscode.extensions.getExtension("kashtheking.texttoscratch");
   api = await ext.activate();
   await until("project detection", () => api.projects().length === 1);
   console.log("projects:", api.projects());
