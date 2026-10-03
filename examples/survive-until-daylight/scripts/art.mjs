@@ -259,7 +259,6 @@ function hairShape(p, view, hx, hy) {
     return s;
   }
   let s = "";
-  if (p.hs === "long") s += `<path d="M${hx - 15} ${hy - 2} q-3 26 3 32 h7 v-30z M${hx + 15} ${hy - 2} q3 26 -3 32 h-7 v-30z" fill="${h}"/>`;
   s += `<path d="M${hx - 14} ${hy - 1} q0 -17 14 -17 q14 0 14 17 q-6 -8 -14 -8 q-8 0 -14 8z" fill="${h}"/>`;
   if (p.hs === "spiky") s += `<path d="M${hx - 14} ${hy - 6} l-3 -10 l8 3 l3 -11 l6 8 l4 -9 l3 9 l7 -6 l0 10 l6 1z" fill="${h}"/>`;
   if (p.hs === "bun") s += `<circle cx="${hx}" cy="${hy - 18}" r="7" fill="${h}"/>`;
@@ -290,6 +289,7 @@ function head(p, view, hx, hy, scared = false) {
     s += `<path d="M${hx + 6} ${hy + 8} h5" stroke="#5A2A22" stroke-width="1.5"/><ellipse cx="${hx - 3}" cy="${hy + 1}" rx="3" ry="4" fill="${skD}"/>`;
     return s + hairShape(p, view, hx, hy) + accessory(p, view, hx, hy);
   }
+  if (p.hs === "long") s = `<path d="M${hx - 16} ${hy - 4} q0 -14 16 -14 q16 0 16 14 v26 q0 6 -6 6 h-20 q-6 0 -6 -6z" fill="${p.hair}"/>` + s;
   s += `<ellipse cx="${hx}" cy="${hy}" rx="13" ry="14" fill="${sk}" stroke="${skD}" stroke-width="1.5"/>`;
   s += `<ellipse cx="${hx - 13}" cy="${hy + 1}" rx="2.5" ry="4" fill="${sk}" stroke="${skD}"/><ellipse cx="${hx + 13}" cy="${hy + 1}" rx="2.5" ry="4" fill="${sk}" stroke="${skD}"/>`;
   s += `<ellipse cx="${hx - 5}" cy="${hy + 1}" rx="2.6" ry="${scared ? 3.6 : 3}" fill="#FFF"/><ellipse cx="${hx + 5}" cy="${hy + 1}" rx="2.6" ry="${scared ? 3.6 : 3}" fill="#FFF"/>`;
