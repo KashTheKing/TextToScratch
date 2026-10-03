@@ -161,20 +161,31 @@ export function scratchId(s: string): string | null {
   return m ? m[1] : null;
 }
 
-/** Download a shared project (project.json + every asset) as an Sb3. */
-export async function fetchScratchProject(id: string): Promise<{ sb3: Sb3; title: string }> {
+export interface FetchProgress { step: "info" | "project" | "assets"; done: number; total: number; bytes: number }
+
+/** Download a shared project (project.json + every asset) as an Sb3. `progress` is called as each piece arrives. */
+export async function fetchScratchProject(id: string, progress?: (p: FetchProgress) => void): Promise<{ sb3: Sb3; title: string }> {
+  let bytes = 0;
   const get = async (url: string) => {
     const r = await fetch(url);
     if (!r.ok) throw new Error(`${url}: HTTP ${r.status}${r.status === 404 ? " (is the project shared?)" : ""}`);
     return r;
   };
+  progress?.({ step: "info", done: 0, total: 0, bytes });
   const meta: any = await (await get(`https://api.scratch.mit.edu/projects/${id}`)).json();
-  const json: any = await (await get(`https://projects.scratch.mit.edu/${id}?token=${meta.project_token}`)).json();
+  progress?.({ step: "project", done: 0, total: 0, bytes });
+  const text = await (await get(`https://projects.scratch.mit.edu/${id}?token=${meta.project_token}`)).text();
+  bytes += text.length;
+  const json: any = JSON.parse(text);
   if (!json.targets) throw new Error("Only Scratch 3 projects can be imported");
   const files: Record<string, Uint8Array> = {};
   const assets = new Set<string>(json.targets.flatMap((t: any) => [...t.costumes, ...t.sounds].map((a: any) => a.md5ext)));
+  let done = 0;
+  progress?.({ step: "assets", done, total: assets.size, bytes });
   await Promise.all([...assets].map(async (a) => {
     files[a] = new Uint8Array(await (await get(`https://assets.scratch.mit.edu/internalapi/asset/${a}/get/`)).arrayBuffer());
+    bytes += files[a].length;
+    progress?.({ step: "assets", done: ++done, total: assets.size, bytes });
   }));
   return { sb3: { json, files }, title: meta.title ?? id };
 }

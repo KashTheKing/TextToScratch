@@ -258,6 +258,8 @@ async function newProject() {
   await finishProject(dir, path.join(dir, "src", pick.value === "empty" ? "Player.ts" : "Stage.ts"));
 }
 
+const mb = (n: number) => (n < 1e6 ? `${Math.max(1, Math.round(n / 1e3))} KB` : `${(n / 1e6).toFixed(1)} MB`);
+
 async function importProject(from?: string, into?: string) {
   if (!from) {
     const pick = await vscode.window.showQuickPick([
@@ -274,9 +276,16 @@ async function importProject(from?: string, into?: string) {
   const id = fs.existsSync(from) ? null : scratchId(from);
   let data: any, title = id ? id : path.basename(from, path.extname(from));
   try {
-    data = await vscode.window.withProgress({ location: vscode.ProgressLocation.Notification, title: id ? "Downloading Scratch project…" : "Reading .sb3…" }, async () => {
+    data = await vscode.window.withProgress({ location: vscode.ProgressLocation.Notification, title: id ? "Downloading Scratch project" : "Reading .sb3…" }, async (bar) => {
       if (!id) return new Uint8Array(fs.readFileSync(from!));
-      const r = await fetchScratchProject(id);
+      let shown = 0; // percent already reported (the bar takes increments)
+      const r = await fetchScratchProject(id, (p) => {
+        const pct = p.step === "assets" && p.total ? 5 + (95 * p.done) / p.total : p.step === "project" ? 3 : 0;
+        const message = p.step === "info" ? "looking up the project…" : p.step === "project" ? "downloading the project…"
+          : `${p.done} / ${p.total} costumes & sounds · ${mb(p.bytes)}`;
+        bar.report({ message, increment: pct - shown });
+        shown = pct;
+      });
       title = r.title;
       return r.sb3;
     });
@@ -285,7 +294,10 @@ async function importProject(from?: string, into?: string) {
   }
   const dir = into ?? (await chooseTarget(title.replace(/[<>:"/\\|?*]/g, "").trim() || "scratch-project"));
   if (!dir) return;
-  const { warnings, decompiled } = await importSb3(data, dir);
+  const { warnings, decompiled } = await vscode.window.withProgress(
+    { location: vscode.ProgressLocation.Notification, title: "Converting blocks to TypeScript and saving assets…" },
+    () => importSb3(data, dir),
+  );
   showImportWarnings(dir, warnings);
   if (warnings.length) vscode.window.showWarningMessage(`Imported with ${warnings.length} decompiler warning(s): see the Problems panel.`);
   else vscode.window.showInformationMessage(decompiled ? "Imported: every script was decompiled to TypeScript." : "Imported the TextToScratch sources stored in the project.");

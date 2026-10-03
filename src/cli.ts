@@ -25,7 +25,12 @@ async function main() {
     if (!from) return console.error("usage: tts import <file.sb3 | scratch project url or id> [dir]");
     const id = fs.existsSync(from) ? null : scratchId(from);
     const target = rest[1] ?? (id ?? path.basename(from, ".sb3"));
-    const { warnings } = await importSb3(id ? (await fetchScratchProject(id)).sb3 : fs.readFileSync(from), target);
+    const show = (p: { step: string; done: number; total: number; bytes: number }) =>
+      process.stdout.write(`\r${p.step === "assets" ? `Downloading ${p.done}/${p.total} assets (${(p.bytes / 1e6).toFixed(1)} MB)` : "Downloading project..."}   `);
+    const data = id ? (await fetchScratchProject(id, show)).sb3 : fs.readFileSync(from);
+    if (id) process.stdout.write("\n");
+    console.log("Converting blocks to TypeScript...");
+    const { warnings } = await importSb3(data, target);
     for (const w of warnings) console.warn(`warning: ${w}`);
     return console.log(`Imported into ${target}. Run: tts build ${target}`);
   }
