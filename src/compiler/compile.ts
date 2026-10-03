@@ -18,6 +18,11 @@ const fail = (node: ts.Node, msg: string): never => { throw new CErr(node, msg);
 
 const MUT = (o: Record<string, string>) => ({ tagName: "mutation", children: [], ...o });
 const isExported = (n: ts.Node) => !!ts.getCombinedModifierFlags(n as ts.Declaration) && (ts.getCombinedModifierFlags(n as ts.Declaration) & ts.ModifierFlags.Export) !== 0;
+/** The Scratch name from a `@name` JSDoc tag, if any. */
+const scratchName = (n: ts.Node) => {
+  const t = ts.getJSDocTags(n).find((t) => t.tagName.text === "name");
+  return (t && ts.getTextOfJSDocComment(t.comment)?.trim()) || undefined;
+};
 
 /** Literal value of an initializer, or undefined when not a compile-time literal. */
 function literal(e: ts.Expression | undefined): any {
@@ -110,6 +115,7 @@ export class Target {
     }
   }
 
+  // `/** @name nextCostume # */ let nextCostume = 0;` keeps a Scratch name that isn't a valid identifier
   private declareVar(d: ts.VariableDeclaration, isConst: boolean, global: boolean) {
     if (!ts.isIdentifier(d.name)) fail(d, "Destructuring is not supported");
     const name = (d.name as ts.Identifier).text;
@@ -123,9 +129,9 @@ export class Target {
         if (!ts.isPropertyAssignment(p) || !ts.isIdentifier(p.name)) fail(p, "State objects may only contain `name: literal` properties");
         const v = this.initValue((p as ts.PropertyAssignment).initializer);
         if (v === undefined) fail(p, "State object values must be literals or constants");
-        if (cloud && typeof v !== "number") fail(p, "Cloud variables can only hold numbers");
+        if (cloud && !(typeof v === "number" || /^-?\d+(\.\d+)?$/.test(String(v)))) fail(p, "Cloud variables can only hold numbers");
         const base = (p.name as ts.Identifier).text;
-        const info: VarInfo = { name: this.unique(cloud ? `☁ ${base}` : base, global), id: "", list: Array.isArray(v), value: v, global, cloud };
+        const info: VarInfo = { name: this.unique(scratchName(p) ?? (cloud ? `☁ ${base}` : base), global), id: "", list: Array.isArray(v), value: v, global, cloud };
         info.id = (global ? "g_" : this.prefix + "v_") + info.name.replace("☁ ", "cloud_");
         (global ? this.ctx.globals : this.vars).set(p, info);
       }
@@ -135,7 +141,7 @@ export class Target {
     if (d.initializer && val === undefined) fail(d.initializer!, "Top-level initializers must be literals or constants; assign other values inside whenFlag()");
     const list = Array.isArray(val) || this.isArray(d);
     if (isConst && !list && val !== undefined) return void this.ctx.consts.set(d, val);
-    const info: VarInfo = { name: this.unique(name, global), id: "", list, value: val ?? (list ? [] : 0), global };
+    const info: VarInfo = { name: this.unique(scratchName(d) ?? name, global), id: "", list, value: val ?? (list ? [] : 0), global };
     info.id = (global ? "g_" : this.prefix + "v_") + info.name;
     (global ? this.ctx.globals : this.vars).set(d, info);
   }

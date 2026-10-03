@@ -171,3 +171,12 @@ test("type errors and unsupported syntax are reported with positions", () => {
   const res3 = compile({ "Stage.ts": `whenFlag(() => { switchCostume("nope"); });` });
   assert.match(res3.diagnostics[0].message, /not assignable/);
 });
+
+test("valueOf() reads another sprite's variable (not Object.prototype.valueOf)", async () => {
+  const r = await run({
+    "Stage.ts": `export const out = { v: 0 };`,
+    "A.ts": `import { out } from "./Stage";\nwhenFlag(() => { wait(0.05); out.v = valueOf("B", "x y") as number; });`,
+    "B.ts": `/** @name x y */ let xy = 7;`,
+  });
+  assert.equal(Number(r.g("v")), 7);
+});

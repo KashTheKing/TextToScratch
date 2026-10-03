@@ -180,11 +180,11 @@ test("hand-made Scratch blocks decompile, rebuild and produce the same values", 
   assert.equal(before["Stage.summary"], "n=6");
   for (const k of ["result", "second", "idx", "letter", "m", "counter", "summary", "items"]) assert.deepEqual(after["Stage." + k], before["Stage." + k], k);
   assert.deepEqual(after["Sprite 1@"], before["Sprite 1@"]);
-  assert.equal(after["Sprite 1.myCount"], before["Sprite 1.my count"]);
+  assert.equal(after["Sprite 1.my count"], before["Sprite 1.my count"]); // the Scratch name survives the round trip
 
   const code = d.sources["Sprite 1.ts"];
   assert.match(code, /\/\*\* @warp \*\/\nfunction addTimesIf\(word: string, times: number, loud: boolean\)/);
-  assert.match(code, /let myCount = 0; \/\/ "my count"/);
+  assert.match(code, /\/\*\* @name my count \*\/ let myCount = 0;/);
   assert.match(code, /game\.items\.insert\(0, "z"\);/);
   assert.match(code, /game\.items\[game\.items\.length - 1\] = "end";/);
   assert.match(code, /while \(!\(game\.counter > 3\)\)|while \(game\.counter <= 3\)/);
@@ -226,4 +226,21 @@ test("multi-line comments with any line ending stay comments", () => {
   const d = decompile(sb3.json);
   for (const l of ["first", "second line", "third", "fourth"]) assert.match(d.sources["Commented.ts"], new RegExp(`// ${l}$`, "m"));
   assert.deepEqual(build({ sources: d.sources, base: sb3 }, libs).diagnostics, []);
+});
+
+test("renamed variables keep their Scratch names and long numbers keep every digit", () => {
+  const { all, B, seq } = blocks();
+  seq(0, B("event_whenflagclicked"), B("looks_nextcostume"));
+  const sb3 = emptyProject();
+  const s = newSprite("Hero", 1);
+  s.target.blocks = all;
+  s.target.variables = { a: ["nextCostume #", 2] } as any;
+  sb3.json.targets[0].variables = { c: ["☁ 4HUJ", "163440122104051423939493453364121301", true], g: ["Player Y", 5] } as any;
+  sb3.json.targets.push(s.target);
+  const d = decompile(sb3.json);
+  const res = build({ sources: d.sources, base: sb3 }, libs);
+  assert.deepEqual(res.diagnostics, []);
+  const names: any[] = res.sb3!.json.targets.flatMap((t: any) => Object.values(t.variables) as any[]);
+  for (const n of ["nextCostume #", "☁ 4HUJ", "Player Y"]) assert.ok(names.some((v) => v[0] === n), `${n} kept`);
+  assert.equal(String(names.find((v) => v[0] === "☁ 4HUJ")![1]), "163440122104051423939493453364121301");
 });

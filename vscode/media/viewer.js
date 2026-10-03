@@ -30,9 +30,13 @@
     .then(([js, css, vendor]) => { window.ttsVendor = vendor; return { js, css }; });
   assets.catch((e) => window.ttsError("could not load the player: " + e.message));
 
+  // the simulated cloud server: remembers every value so a player who (re)joins gets the current state, like Scratch's
+  const cloudState = new Map();
   window.ttsCloud = (from, name, value) => {
+    cloudState.set(name, value);
     for (const f of frames) if (f.index !== from) setTimeout(() => f.api && f.api.cloud(name, value), LATENCY);
   };
+  window.ttsCloudState = () => [...cloudState];
 
   function makeFrames() {
     const box = $("frames");
@@ -83,6 +87,7 @@
   async function load(bytes, flag) {
     project = bytes;
     pending = null;
+    cloudState.clear(); // a fresh "server" per load
     status("Loading…");
     try {
       await Promise.all(frames.map((f) => f.ready));
@@ -191,6 +196,9 @@
         // copy into this frame's realm: the VM checks `instanceof ArrayBuffer`
         await vm.loadProject(new Uint8Array(bytes).slice().buffer);
         vm.setCloudProvider(provider); // loadProject resets the provider
+        // each player is a different logged-in user (multiplayer games tell players apart by username)
+        vm.postIOData("userData", { username: "Player" + (api.index + 1) });
+        for (const [name, value] of window.parent.ttsCloudState ? window.parent.ttsCloudState() : []) api.cloud(name, value);
         vm.setTurboMode(turbo);
         if (flag) vm.greenFlag();
       },

@@ -21,7 +21,10 @@ const up = (v: string) => v.toUpperCase();
 const TARGET = { mouse: "_mouse_", random: "_random_", edge: "_edge_", myself: "_myself_", _stage_: "_stage_" };
 const stop = (opt: string, hasnext: boolean): Spec => ({ op: "control_stop", fx: { STOP_OPTION: opt }, m: { hasnext: String(hasnext) } });
 
-export const STACK: Record<string, Spec> = {
+// Tables have no prototype, so names like `valueOf` or `toString` never match Object.prototype members.
+const table = (o: object) => Object.assign(Object.create(null), o);
+
+export const STACK: Record<string, Spec> = table({
   move: { op: "motion_movesteps", args: [n("STEPS")] },
   turnRight: { op: "motion_turnright", args: [n("DEGREES")] },
   turnLeft: { op: "motion_turnleft", args: [n("DEGREES")] },
@@ -78,9 +81,9 @@ export const STACK: Record<string, Spec> = {
   changePenSize: { op: "pen_changePenSizeBy", args: [n("SIZE")] },
   setPenParam: { op: "pen_setPenColorParamTo", args: [menu("COLOR_PARAM", "pen_menu_colorParam", "colorParam"), n("VALUE")] },
   changePenParam: { op: "pen_changePenColorParamBy", args: [menu("COLOR_PARAM", "pen_menu_colorParam", "colorParam"), n("VALUE")] },
-};
+});
 
-export const REPORT: Record<string, Spec> = {
+export const REPORT: Record<string, Spec> = table({
   touching: { op: "sensing_touchingobject", args: [menu("TOUCHINGOBJECTMENU", "sensing_touchingobjectmenu", "TOUCHINGOBJECTMENU", TARGET)] },
   touchingColor: { op: "sensing_touchingcolor", args: [n("COLOR", "col")] },
   distanceTo: { op: "sensing_distanceto", args: [menu("DISTANCETOMENU", "sensing_distancetomenu", "DISTANCETOMENU", TARGET)] },
@@ -96,25 +99,25 @@ export const REPORT: Record<string, Spec> = {
   current: { op: "sensing_current", args: [fld("CURRENTMENU", up)] },
   valueOf: { op: "sensing_of", args: [menu("OBJECT", "sensing_of_object_menu", "OBJECT", TARGET), fld("PROPERTY")] },
   random: { op: "operator_random", args: [n("FROM"), n("TO")] },
-};
+});
 
-export const MATHOP: Record<string, string> = {
+export const MATHOP: Record<string, string> = table({
   sin: "sin", cos: "cos", tan: "tan", asin: "asin", acos: "acos", atan: "atan",
   "Math.abs": "abs", "Math.floor": "floor", "Math.ceil": "ceiling", "Math.sqrt": "sqrt",
   "Math.log": "ln", "Math.log10": "log", "Math.exp": "e ^",
-};
+});
 
-export const HATS: Record<string, Spec> = {
+export const HATS: Record<string, Spec> = table({
   whenFlag: { op: "event_whenflagclicked" },
   whenKey: { op: "event_whenkeypressed", args: [fld("KEY_OPTION")] },
   whenBackdrop: { op: "event_whenbackdropswitchesto", args: [fld("BACKDROP")] },
   whenGreater: { op: "event_whengreaterthan", args: [fld("WHENGREATERTHANMENU", up), n("VALUE")] },
   onClone: { op: "control_start_as_clone" },
   // whenClicked / onMessage are special-cased in compile.ts
-};
+});
 
 interface Prop { get?: Spec; set?: [string, string, Slot?]; change?: [string, string] }
-export const PROPS: Record<string, Prop> = {
+export const PROPS: Record<string, Prop> = table({
   x: { get: { op: "motion_xposition" }, set: ["motion_setx", "X"], change: ["motion_changexby", "DX"] },
   y: { get: { op: "motion_yposition" }, set: ["motion_sety", "Y"], change: ["motion_changeyby", "DY"] },
   direction: { get: { op: "motion_direction" }, set: ["motion_pointindirection", "DIRECTION", "ang"], change: ["motion_turnright", "DEGREES"] },
@@ -125,6 +128,6 @@ export const PROPS: Record<string, Prop> = {
   backdropNumber: { get: { op: "looks_backdropnumbername", fx: { NUMBER_NAME: "number" } } },
   backdropName: { get: { op: "looks_backdropnumbername", fx: { NUMBER_NAME: "name" } } },
   // visible / draggable / rotationStyle are special-cased (set only)
-};
+});
 
 export const SHADOW: Record<string, number> = { n: 4, pn: 5, int: 7, whole: 6, ang: 8, col: 9, s: 10 };

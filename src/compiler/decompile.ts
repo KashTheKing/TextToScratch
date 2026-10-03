@@ -51,6 +51,8 @@ const str = (s: string) => JSON.stringify(s);
 const NUM = /^-?(0|[1-9]\d*)(\.\d+)?$/;
 const numLike = (s: string) => s.trim() !== "" && Number.isFinite(Number(s));
 const num = (s: string): Ex => {
+  // more than 15 digits don't fit a JS number exactly (cloud data is often long digit strings): keep them as text
+  if (/^-?\d{16,}$/.test(s.trim())) return { c: `(${str(s.trim())} as any)`, p: PRIM, t: "a" };
   const c = NUM.test(s) ? s : String(Number(s));
   return { c, p: c.startsWith("-") ? UNARY : PRIM, t: "n" };
 };
@@ -609,14 +611,16 @@ class Dec {
       : t === "s" ? str(String(x))
       : t === "b" ? String(x === true || x === "true")
       : typeof x === "boolean" ? String(x) : natural(String(x)).c;
-    const renamed = v.ident !== v.name.replace(/^☁\s*/, "") ? ` // "${v.name}"` : "";
+    // keep the exact Scratch name when the identifier differs: other sprites may read it with valueOf(sprite, name)
+    const tag = v.ident !== v.name.replace(/^☁\s*/, "") ? `/** @name ${v.name} */ ` : "";
     if (v.list) {
       const items = `[${(v.value as any[]).map((x) => lit(x, v.t)).join(", ")}]`;
-      return prop ? `  ${v.ident}: ${items} as ${tsType(v.t)}[],${renamed}` : `let ${v.ident}: ${tsType(v.t)}[] = ${items};${renamed}`;
+      return prop ? `  ${tag}${v.ident}: ${items} as ${tsType(v.t)}[],` : `${tag}let ${v.ident}: ${tsType(v.t)}[] = ${items};`;
     }
     const value = lit(v.value, v.cloud ? "n" : v.t);
-    if (prop) return `  ${v.ident}: ${value}${v.t === "a" || (v.cloud && v.t !== "n") ? " as any" : ""},${renamed}`;
-    return `let ${v.ident}${v.t === "a" ? ": any" : ""} = ${value};${renamed}`;
+    const any = !value.endsWith("as any)") && (v.t === "a" || (v.cloud && v.t !== "n")) ? " as any" : "";
+    if (prop) return `  ${tag}${v.ident}: ${value}${any},`;
+    return `${tag}let ${v.ident}${v.t === "a" ? ": any" : ""} = ${value};`;
   }
 
   source(): string {
