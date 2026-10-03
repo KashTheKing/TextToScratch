@@ -6,7 +6,7 @@ import path from "node:path";
 import { buildDir, DirBuild, fetchScratchProject, importSb3, init, libs, NEW_SPRITE, readDir, scaffold, scratchId, ensureTsconfig, updateTypings } from "../../src/node";
 import { Libs, SOUND_EXT } from "../../src/compiler";
 
-const DOCS = "https://github.com/KashTheKing/TextToScratch/blob/main/website/docs/vscode.md";
+const DOCS = "https://github.com/TextToScratch/TextToScratch/blob/main/website/docs/vscode.md";
 let ext: vscode.ExtensionContext;
 let L: Libs;
 let projects: string[] = [];

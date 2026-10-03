@@ -10,7 +10,7 @@ const config: Config = {
   baseUrl: "/text-to-scratch/",
   // GitHub Pages redirects /page to /page/ (over http, since HTTPS isn't enforced): link to /page/ directly
   trailingSlash: true,
-  organizationName: "KashTheKing",
+  organizationName: "TextToScratch",
   projectName: "TextToScratch",
   onBrokenLinks: "throw",
   markdown: { hooks: { onBrokenMarkdownLinks: "throw" } },
@@ -72,7 +72,7 @@ const config: Config = {
           items: [
             { label: "Discord", href: "https://discord.gg/AnsrYzRXar" },
             { label: "Official Scratch studio", href: "https://scratch.mit.edu/studios/52025574" },
-            { label: "GitHub", href: "https://github.com/KashTheKing/TextToScratch" },
+            { label: "GitHub", href: "https://github.com/TextToScratch/TextToScratch" },
             { label: "Support", to: "/support" },
             { label: "Privacy policy", to: "/privacy" },
             { label: "kashtheking.com", href: "https://kashtheking.com" },

@@ -50,7 +50,7 @@ In the user's logged-in Chrome (claude-in-chrome). GUI buttons are flaky in a ba
 4. Upload every costume and sound: `POST https://assets.scratch.mit.edu/<assetId>.<dataFormat>` (body `asset.data`, credentials include).
 5. Save: `PUT https://projects.scratch.mit.edu/<id>`, body `vm.toJSON()`, header `x-token`.
 6. Thumbnail: `vm.renderer.requestSnapshot(cb); vm.renderer.draw()` gives a PNG data URL; POST the blob to `/internalapi/project/thumbnail/<id>/set/` with `X-CSRFToken`. Race it with a 5s timeout (background tabs may not render).
-7. Title, instructions, notes: `PUT https://api.scratch.mit.edu/projects/<id>` with `x-token`, body `{title, instructions, description}`. Notes start "Made with TextToScratch!" and link the source and https://github.com/KashTheKing/TextToScratch.
+7. Title, instructions, notes: `PUT https://api.scratch.mit.edu/projects/<id>` with `x-token`, body `{title, instructions, description}`. Notes start "Made with TextToScratch!" and link the source and https://github.com/TextToScratch/TextToScratch.
 8. Navigate (force: true; the editor thinks it's unsaved) to the project page and click the yellow banner's **Share** button by coordinate. Retry until `https://api.scratch.mit.edu/projects/<id>` returns 200.
 9. Add to the studio: `POST https://api.scratch.mit.edu/studios/52025574/project/<id>` with `x-token` (403 until shared).
 10. Verify the thumbnail on the studio page. If it shows the game instead of the title card, re-snapshot from the project page's VM and POST again.

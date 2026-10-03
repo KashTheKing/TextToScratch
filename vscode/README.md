@@ -36,4 +36,4 @@ my-game/
 | `texttoscratch.autoReload` | `true` | Reload the viewer after each successful build |
 | `texttoscratch.keepRunning` | `true` | Press the green flag again after a reload if the game was running |
 
-The compiler is bundled, so you don't need `npm install`. Docs: https://github.com/KashTheKing/TextToScratch
+The compiler is bundled, so you don't need `npm install`. Docs: https://github.com/TextToScratch/TextToScratch

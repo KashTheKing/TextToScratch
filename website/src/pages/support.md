@@ -8,7 +8,7 @@ description: Get help with TextToScratch
 Need help with TextToScratch, the browser extension, or the game engine?
 
 - **Fastest help: [join the TextToScratch Discord](https://discord.gg/AnsrYzRXar).** Ask questions, share your games and talk to other TextToScratch users.
-- **Bugs and feature requests:** [open an issue on GitHub](https://github.com/KashTheKing/TextToScratch/issues). Include what you did, what you expected, and any error shown in the editor.
+- **Bugs and feature requests:** [open an issue on GitHub](https://github.com/TextToScratch/TextToScratch/issues). Include what you did, what you expected, and any error shown in the editor.
 - **Questions and showing off:** comment on the [official TextToScratch studio](https://scratch.mit.edu/studios/52025574) on Scratch.
 - **Guides:** start with [Getting started](/docs/intro), the [platformer tutorial](/docs/platformer) and the [API reference](/docs/reference).
 

@@ -16,7 +16,7 @@ TextToScratch adds a "Text Code" button to the Scratch editor (scratch.mit.edu a
 • Everything runs locally in your browser
 
 Docs: https://kashtheking.com/text-to-scratch
-Source: https://github.com/KashTheKing/TextToScratch
+Source: https://github.com/TextToScratch/TextToScratch
 Example games: https://scratch.mit.edu/studios/52025574
 Community and support Discord: https://discord.gg/AnsrYzRXar
 
