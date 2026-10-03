@@ -47,7 +47,7 @@ When no project is open, the TextToScratch sidebar has the same buttons. Any fol
 - Stage size options (small, normal, large, fit) and full screen.
 - Variable and list monitors, keyboard and mouse input, `askAndWait`, sounds, and bitmap and SVG costumes.
 - **Auto-reload**: the game reloads after each save. With **Keep running** on, it presses the green flag again if the game was running.
-- **2 players**: two copies of the game side by side, sharing cloud variables through a simulated local server. Use it to test [multiplayer](engine/multiplayer) games. Click a stage to control that player.
+- **2 players**: two copies of the game side by side, sharing cloud variables through a simulated local server. Use it to test [multiplayer](./engine/multiplayer.md) games. Click a stage to control that player.
 
 ## Sharing
 
