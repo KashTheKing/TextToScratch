@@ -11,7 +11,7 @@ The extension adds a **{ } Text Code** button to the Scratch editor (scratch.mit
 
 ## Chrome, Edge, Brave and other Chromium browsers
 
-<span className="step">1</span> Download **[texttoscratch-extension.zip](pathname:///text-to-scratch/downloads/texttoscratch-extension.zip)** and unzip it.
+<span className="step">1</span> Download **[texttoscratch-extension.zip](pathname:///downloads/texttoscratch-extension.zip)** and unzip it.
 
 <span className="step">2</span> Open `chrome://extensions` and switch on **Developer mode** (top right).
 
@@ -26,7 +26,7 @@ Firefox removes temporary add-ons when it restarts.
 
 ## No install? Use the web editor
 
-The **[web editor](pathname:///text-to-scratch/editor/)** is the same editor as a plain web page.
+The **[web editor](pathname:///editor/)** is the same editor as a plain web page.
 Click **Open .sb3**, code, then **Download .sb3** and load the file into Scratch with **File → Load from your computer**.
 
 :::tip Where is my code saved?

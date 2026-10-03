@@ -1,13 +1,13 @@
 # TextToScratch
 
-[![Discord](https://img.shields.io/badge/Discord-join%20the%20community-5865F2?logo=discord&logoColor=white)](https://discord.gg/AnsrYzRXar) [![Docs](https://img.shields.io/badge/docs-kashtheking.com-855CD6)](https://kashtheking.com/text-to-scratch/)
+[![Discord](https://img.shields.io/badge/Discord-join%20the%20community-5865F2?logo=discord&logoColor=white)](https://discord.gg/AnsrYzRXar) [![Docs](https://img.shields.io/badge/docs-kashtheking.com-855CD6)](https://texttoscratch.github.io/)
 
 Write Scratch games in **typed TypeScript** and compile them to real Scratch blocks (`.sb3`).
 Draw sprites and backdrops in Scratch (or drop image files in a folder); write all the logic as code.
 
 - Full type checking by the real TypeScript compiler, so typos in sprite, costume, backdrop and sound names are compile errors.
 - Output is a normal Scratch project: open it in Scratch or TurboWarp, share it, remix it.
-- Docs, tutorial and web editor: **https://kashtheking.com/text-to-scratch/**
+- Docs, tutorial and web editor: **https://texttoscratch.github.io/**
 - Three ways to use it: a **browser extension** that adds a code editor inside the Scratch editor, a **standalone web editor**, and a **CLI** for VS Code users.
 
 ```ts
@@ -171,7 +171,7 @@ whenFlag(() => {
 | `tts/math`, `tts/data`, `tts/time`, `tts/scene`, `tts/draw`, `tts/particles` | utilities |
 
 Classes (`class Enemy { ... }` with fields, methods, constructors and `extends`) work in sprites, `src/lib/` and the engine.
-Demos: `examples/engine-demo` (Sky Run), `examples/3d-demo`, `examples/multiplayer`. Full docs: https://kashtheking.com/text-to-scratch/docs/engine
+Demos: `examples/engine-demo` (Sky Run), `examples/3d-demo`, `examples/multiplayer`. Full docs: https://texttoscratch.github.io/docs/engine
 
 ## Development
 

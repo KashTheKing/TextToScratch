@@ -6,9 +6,9 @@ const config: Config = {
   title: "TextToScratch",
   tagline: "Write Scratch games in typed TypeScript. Get real Scratch blocks.",
   favicon: "img/favicon.svg",
-  url: "https://kashtheking.com",
-  baseUrl: "/text-to-scratch/",
-  // GitHub Pages redirects /page to /page/ (over http, since HTTPS isn't enforced): link to /page/ directly
+  url: "https://texttoscratch.github.io",
+  baseUrl: "/",
+  // GitHub Pages redirects /page to /page/: link to /page/ directly
   trailingSlash: true,
   organizationName: "TextToScratch",
   projectName: "TextToScratch",
@@ -46,7 +46,7 @@ const config: Config = {
         { to: "/docs/reference", label: "API", position: "left" },
         { href: "https://scratch.mit.edu/studios/52025574", label: "Scratch Studio", position: "right" },
         { href: "https://discord.gg/AnsrYzRXar", label: "Discord", position: "right" },
-        { href: "pathname:///text-to-scratch/editor/", label: "Open Editor", position: "right" },
+        { href: "pathname:///editor/", label: "Open Editor", position: "right" },
       ],
     },
     footer: {
@@ -63,8 +63,8 @@ const config: Config = {
         {
           title: "Tools",
           items: [
-            { label: "Web editor", href: "pathname:///text-to-scratch/editor/" },
-            { label: "Platformer example (.sb3)", href: "pathname:///text-to-scratch/examples/platformer.sb3" },
+            { label: "Web editor", href: "pathname:///editor/" },
+            { label: "Platformer example (.sb3)", href: "pathname:///examples/platformer.sb3" },
           ],
         },
         {

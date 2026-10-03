@@ -12,7 +12,7 @@ without dragging a single block. You'll draw (or import) the art in Scratch and 
 ![The finished platformer, built and running](/img/guide/build-run.jpg)
 
 :::info Want to skip ahead?
-Download the finished project, **[platformer.sb3](pathname:///text-to-scratch/examples/platformer.sb3)**, and open it in Scratch with
+Download the finished project, **[platformer.sb3](pathname:///examples/platformer.sb3)**, and open it in Scratch with
 **File → Load from your computer**. Click **{ } Text Code** to see all of its code.
 :::
 

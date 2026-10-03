@@ -15,7 +15,7 @@ TextToScratch adds a "Text Code" button to the Scratch editor (scratch.mit.edu a
 • Your code is saved inside the project, so you can keep editing it later
 • Everything runs locally in your browser
 
-Docs: https://kashtheking.com/text-to-scratch
+Docs: https://texttoscratch.github.io
 Source: https://github.com/TextToScratch/TextToScratch
 Example games: https://scratch.mit.edu/studios/52025574
 Community and support Discord: https://discord.gg/AnsrYzRXar
@@ -30,10 +30,10 @@ store/shot1.png … shot4.png (1280×800)
 - Host permission justification (scratch.mit.edu/projects/*, turbowarp.org/*): The content scripts add the code editor to the Scratch/TurboWarp editor and load the compiled project into it.
 - Remote code: No.
 - Data usage: collects no user data (leave every box unchecked); tick all three certifications.
-- Privacy policy URL: https://kashtheking.com/text-to-scratch/privacy/
+- Privacy policy URL: https://texttoscratch.github.io/privacy/
 
 ## Support URL
-https://kashtheking.com/text-to-scratch/support/
+https://texttoscratch.github.io/support/
 
 ## Promo images
 store/promo-small-440x280.png, store/promo-marquee-1400x560.png

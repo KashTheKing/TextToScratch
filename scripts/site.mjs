@@ -1,5 +1,5 @@
 // Builds the docs site (website/build): bundles the web editor and example projects into its static files.
-// `node scripts/site.mjs --deploy` then copies it to ../kashtheking.github.io/text-to-scratch.
+// `node scripts/site.mjs --deploy` then pushes it to TextToScratch/texttoscratch.github.io (the org site, https://texttoscratch.github.io).
 import { execSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
@@ -45,8 +45,13 @@ fs.writeFileSync(`${s}/downloads/texttoscratch-extension.zip`, await zip.generat
 run("npm run build", "website");
 
 if (process.argv.includes("--deploy")) {
-  const target = path.resolve("../kashtheking.github.io/text-to-scratch");
-  fs.rmSync(target, { recursive: true, force: true });
-  copy("website/build", target);
-  console.log(`Copied to ${target}`);
+  // publish website/build as the only commit of the org site repo (built files only, no history)
+  const dir = "website/build";
+  fs.writeFileSync(`${dir}/.nojekyll`, "");
+  run("git init -q -b main", dir);
+  run("git add -A", dir);
+  run(`git commit -qm "Deploy site"`, dir);
+  run(`git push -qf https://github.com/TextToScratch/texttoscratch.github.io.git main`, dir);
+  fs.rmSync(`${dir}/.git`, { recursive: true, force: true });
+  console.log("Deployed to https://texttoscratch.github.io");
 }

@@ -23,7 +23,7 @@ so the result is a normal project you can play, share, and remix.
 | | Best for |
 |---|---|
 | **[Browser extension](./install.md)** | Coding inside the Scratch editor next to your stage and sprites. *Recommended.* |
-| **[Web editor](pathname:///text-to-scratch/editor/)** | Trying it out with no install: open an `.sb3`, edit, download. |
+| **[Web editor](pathname:///editor/)** | Trying it out with no install: open an `.sb3`, edit, download. |
 | **[CLI](./cli.md)** | VS Code, git, and keeping your art as image files in folders. |
 
 ## A taste

@@ -25,9 +25,9 @@ whenFlag(() => {
 
 :::info Try the demos
 Open them in Scratch with **File → Load from your computer**, then click **{ } Text Code** to read the source:
-[Sky Run](pathname:///text-to-scratch/examples/engine-demo.sb3) (scrolling platformer) ·
-[3D demo](pathname:///text-to-scratch/examples/3d-demo.sb3) ·
-[Multiplayer demo](pathname:///text-to-scratch/examples/multiplayer.sb3) (share it, or use TurboWarp, to play online)
+[Sky Run](pathname:///examples/engine-demo.sb3) (scrolling platformer) ·
+[3D demo](pathname:///examples/3d-demo.sb3) ·
+[Multiplayer demo](pathname:///examples/multiplayer.sb3) (share it, or use TurboWarp, to play online)
 :::
 
 ## Modules
