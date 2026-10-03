@@ -1,0 +1,30 @@
+<!doctype html>
+<!-- TextToScratch game viewer. Runs as the VS Code webview (the extension swaps 'self' for the webview source)
+     ('unsafe-eval': scratch-parser validates project.json with ajv-compiled functions) and as a plain page: /vscode/media/viewer.html?project=/examples/platformer/dist/platformer.sb3[&players=2][&noflag] -->
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' blob: 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; media-src 'self' blob: data:; font-src 'self' data:; connect-src 'self' blob: data:; frame-src 'self';">
+  <link rel="stylesheet" href="viewer.css">
+  <title>TextToScratch Game Viewer</title>
+</head>
+<body>
+  <header id="bar">
+    <button id="flag" title="Green flag (start)"><svg viewBox="0 0 16 17" width="22" height="22"><path d="M2 1.5v14" stroke="#45993d" stroke-width="2" stroke-linecap="round"/><path d="M3 2.5c3-2 5 1 9-.5v7c-4 1.5-6-1.5-9 .5z" fill="#4cbf56" stroke="#45993d" stroke-width="1" stroke-linejoin="round"/></svg></button>
+    <button id="stop" title="Stop"><svg viewBox="0 0 14 14" width="20" height="20"><path d="M4.3.5h5.4l3.8 3.8v5.4l-3.8 3.8H4.3L.5 9.7V4.3z" fill="#ec5959" stroke="#b84848" stroke-linejoin="round"/></svg></button>
+    <span id="turbo-label" hidden>⚡ Turbo Mode</span>
+    <span class="spacer"></span>
+    <span id="fps" title="Frames per second">-- fps</span>
+    <label title="Run frames as fast as possible"><input type="checkbox" id="turbo"> Turbo</label>
+    <label title="Reload after each successful build"><input type="checkbox" id="autoreload" checked> Auto-reload</label>
+    <label title="Press the green flag again after a reload if the game was running"><input type="checkbox" id="keeprunning" checked> Keep running</label>
+    <button id="players" class="text" title="Two players sharing cloud variables (simulated locally)">1 player</button>
+    <button id="size" class="text" title="Stage size">Normal</button>
+    <button id="fullscreen" class="text" title="Full screen">⛶</button>
+  </header>
+  <main id="frames"></main>
+  <div id="errors" hidden></div>
+  <footer id="status">Waiting for a build…</footer>
+  <script src="viewer.js"></script>
+</body>
+</html>

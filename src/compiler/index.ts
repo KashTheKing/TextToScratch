@@ -97,7 +97,7 @@ export function build(input: BuildInput, libs: Libs): BuildResult {
   const program = ts.createProgram([...vfs.keys()], options, host);
   const diagnostics: Diag[] = ts.getPreEmitDiagnostics(program).map((d) => {
     const pos = d.file && d.start !== undefined ? d.file.getLineAndCharacterOfPosition(d.start) : { line: 0, character: 0 };
-    return { file: d.file?.fileName ?? "", line: pos.line + 1, col: pos.character + 1, message: ts.flattenDiagnosticMessageText(d.messageText, "\n") };
+    return { file: d.file?.fileName ?? "", line: pos.line + 1, col: pos.character + 1, message: ts.flattenDiagnosticMessageText(d.messageText, "\n"), code: d.code };
   });
   if (diagnostics.length) return { sb3: null, diagnostics, types };
 
@@ -134,6 +134,7 @@ export function build(input: BuildInput, libs: Libs): BuildResult {
       const s = makeSound(file.replace(/\.[^.]+$/, ""), bytes, ext);
       files[s.file[0]] = s.file[1];
       const i = t.sounds.findIndex((x: any) => x.name === s.sound.name);
+      if (i >= 0 && t.sounds[i].assetId === s.sound.assetId) continue; // unchanged file: keep the original entry
       if (i >= 0) t.sounds[i] = s.sound;
       else t.sounds.push(s.sound);
       continue;
@@ -143,6 +144,7 @@ export function build(input: BuildInput, libs: Libs): BuildResult {
     files[c.file[0]] = c.file[1];
     if (t.costumes.length === 1 && placeholders.has(t.costumes[0].assetId)) t.costumes = [];
     const i = t.costumes.findIndex((x: any) => x.name === c.costume.name);
+    if (i >= 0 && t.costumes[i].assetId === c.costume.assetId) continue; // unchanged file: keep its rotation center
     if (i >= 0) t.costumes[i] = c.costume;
     else t.costumes.push(c.costume);
     t.currentCostume = Math.min(t.currentCostume, t.costumes.length - 1);

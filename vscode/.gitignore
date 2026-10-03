@@ -1,0 +1,7 @@
+node_modules/
+dist/
+lib/
+templates/
+media/vendor/
+*.vsix
+.vscode-test/

@@ -13,6 +13,7 @@ const sidebars: SidebarsConfig = {
       items: ["engine/overview", "engine/classes", "engine/2d", "engine/3d", "engine/multiplayer", "engine/utilities"],
     },
     "cli",
+    "vscode",
   ],
 };
 

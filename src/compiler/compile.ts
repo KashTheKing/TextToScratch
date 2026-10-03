@@ -1,7 +1,8 @@
 import ts from "typescript";
 import { Arg, HATS, MATHOP, PROPS, REPORT, SHADOW, Slot, Spec, STACK } from "./api";
 
-export interface Diag { file: string; line: number; col: number; message: string }
+/** code: set on TypeScript type errors (editors show those already), unset on TextToScratch compile errors */
+export interface Diag { file: string; line: number; col: number; message: string; code?: number }
 export interface VarInfo { name: string; id: string; list: boolean; value: any; global: boolean; cloud?: boolean }
 /** An object created with `new` at the top level: fields are variables, methods are compiled per object. */
 interface Instance { name: string; cls: ts.ClassDeclaration; fields: Map<string, VarInfo>; global: boolean }

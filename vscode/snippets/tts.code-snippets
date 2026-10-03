@@ -1,0 +1,46 @@
+{
+  "when green flag clicked": { "prefix": "whenFlag", "body": ["whenFlag(() => {", "\t$0", "});"], "description": "TextToScratch: when green flag clicked" },
+  "when key pressed": { "prefix": "whenKey", "body": ["whenKey(\"${1|space,up arrow,down arrow,left arrow,right arrow,any,a,w,s,d|}\", () => {", "\t$0", "});"], "description": "TextToScratch: when [key] key pressed" },
+  "when this sprite clicked": { "prefix": "whenClicked", "body": ["whenClicked(() => {", "\t$0", "});"], "description": "TextToScratch: when this sprite clicked" },
+  "when I receive": { "prefix": "onMessage", "body": ["onMessage(\"${1:message}\", () => {", "\t$0", "});"], "description": "TextToScratch: when I receive [message]" },
+  "when I start as a clone": { "prefix": "onClone", "body": ["onClone(() => {", "\t$0", "\tdeleteClone();", "});"], "description": "TextToScratch: when I start as a clone" },
+  "when backdrop switches": { "prefix": "whenBackdrop", "body": ["whenBackdrop(\"${1:backdrop1}\", () => {", "\t$0", "});"], "description": "TextToScratch: when backdrop switches to [name]" },
+  "forever": { "prefix": "forever", "body": ["forever(() => {", "\t$0", "});"], "description": "TextToScratch: forever loop (runs every frame)" },
+  "repeat": { "prefix": "repeat", "body": ["repeat(${1:10}, () => {", "\t$0", "});"], "description": "TextToScratch: repeat (n)" },
+  "wait until": { "prefix": "waitUntil", "body": ["waitUntil(() => ${1:mouseDown()});"], "description": "TextToScratch: wait until <condition>" },
+  "if touching": { "prefix": "iftouching", "body": ["if (touching(\"${1:edge}\")) {", "\t$0", "}"], "description": "TextToScratch: if touching [sprite]" },
+  "arrow key movement": {
+    "prefix": "arrowmove",
+    "body": [
+      "forever(() => {",
+      "\tif (keyPressed(\"right arrow\")) me.x += ${1:5};",
+      "\tif (keyPressed(\"left arrow\")) me.x -= $1;",
+      "\tif (keyPressed(\"up arrow\")) me.y += $1;",
+      "\tif (keyPressed(\"down arrow\")) me.y -= $1;",
+      "});"
+    ],
+    "description": "TextToScratch: move with the arrow keys"
+  },
+  "clone spawner": {
+    "prefix": "spawner",
+    "body": [
+      "whenFlag(() => {",
+      "\tme.visible = false;",
+      "\tforever(() => {",
+      "\t\tcreateClone();",
+      "\t\twait(${1:1});",
+      "\t});",
+      "});",
+      "",
+      "onClone(() => {",
+      "\tgoTo(random(-220, 220), 180);",
+      "\tme.visible = true;",
+      "\trepeat(60, () => {",
+      "\t\tme.y -= 6;",
+      "\t});",
+      "\tdeleteClone();",
+      "});"
+    ],
+    "description": "TextToScratch: create a clone every second that falls down the stage"
+  }
+}

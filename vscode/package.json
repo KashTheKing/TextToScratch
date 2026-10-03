@@ -1,0 +1,77 @@
+{
+  "name": "texttoscratch",
+  "displayName": "TextToScratch",
+  "description": "Build Scratch games in typed TypeScript inside VS Code: IntelliSense, compile errors, a live Scratch game viewer, and .sb3 import/export.",
+  "version": "0.1.0",
+  "publisher": "texttoscratch",
+  "license": "MIT",
+  "icon": "media/icon128.png",
+  "repository": { "type": "git", "url": "https://github.com/KashTheKing/TextToScratch" },
+  "homepage": "https://github.com/KashTheKing/TextToScratch",
+  "engines": { "vscode": "^1.85.0" },
+  "categories": ["Programming Languages", "Snippets", "Education", "Other"],
+  "keywords": ["scratch", "sb3", "typescript", "games", "texttoscratch"],
+  "main": "./dist/extension.js",
+  "activationEvents": ["workspaceContains:**/src/Stage.ts", "workspaceContains:**/.tts/scratch.d.ts"],
+  "contributes": {
+    "commands": [
+      { "command": "texttoscratch.newProject", "title": "New Project", "category": "TextToScratch", "icon": "$(add)" },
+      { "command": "texttoscratch.importSb3", "title": "Import Scratch Project (.sb3)", "category": "TextToScratch", "icon": "$(cloud-download)" },
+      { "command": "texttoscratch.build", "title": "Build", "category": "TextToScratch", "icon": "$(package)" },
+      { "command": "texttoscratch.run", "title": "Run in Viewer", "category": "TextToScratch", "icon": "$(play)" },
+      { "command": "texttoscratch.openViewer", "title": "Open Game Viewer", "category": "TextToScratch", "icon": "$(preview)" },
+      { "command": "texttoscratch.openInScratch", "title": "Open in Scratch / TurboWarp", "category": "TextToScratch", "icon": "$(link-external)" },
+      { "command": "texttoscratch.exportSb3", "title": "Export .sb3", "category": "TextToScratch", "icon": "$(save-as)" },
+      { "command": "texttoscratch.addSprite", "title": "Add Sprite", "category": "TextToScratch", "icon": "$(new-file)" },
+      { "command": "texttoscratch.refresh", "title": "Refresh", "category": "TextToScratch", "icon": "$(refresh)" },
+      { "command": "texttoscratch.openDocs", "title": "Open Docs", "category": "TextToScratch" }
+    ],
+    "viewsContainers": {
+      "activitybar": [{ "id": "texttoscratch", "title": "TextToScratch", "icon": "media/icon.svg" }]
+    },
+    "views": {
+      "texttoscratch": [{ "id": "texttoscratch.sprites", "name": "Sprites" }]
+    },
+    "viewsWelcome": [
+      {
+        "view": "texttoscratch.sprites",
+        "contents": "No TextToScratch project is open.\n[New Project](command:texttoscratch.newProject)\n[Import .sb3](command:texttoscratch.importSb3)\n[Open Docs](command:texttoscratch.openDocs)",
+        "when": "!texttoscratch.hasProject"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        { "command": "texttoscratch.run", "when": "view == texttoscratch.sprites", "group": "navigation@1" },
+        { "command": "texttoscratch.build", "when": "view == texttoscratch.sprites", "group": "navigation@2" },
+        { "command": "texttoscratch.addSprite", "when": "view == texttoscratch.sprites", "group": "navigation@3" },
+        { "command": "texttoscratch.refresh", "when": "view == texttoscratch.sprites", "group": "navigation@4" },
+        { "command": "texttoscratch.openInScratch", "when": "view == texttoscratch.sprites" },
+        { "command": "texttoscratch.exportSb3", "when": "view == texttoscratch.sprites" },
+        { "command": "texttoscratch.newProject", "when": "view == texttoscratch.sprites" },
+        { "command": "texttoscratch.importSb3", "when": "view == texttoscratch.sprites" }
+      ],
+      "editor/title": [
+        { "command": "texttoscratch.run", "when": "texttoscratch.hasProject && resourceExtname == .ts", "group": "navigation" }
+      ]
+    },
+    "snippets": [{ "language": "typescript", "path": "./snippets/tts.code-snippets" }],
+    "configuration": {
+      "title": "TextToScratch",
+      "properties": {
+        "texttoscratch.buildOnSave": { "type": "boolean", "default": true, "description": "Compile the project (and report TextToScratch errors) every time a file is saved." },
+        "texttoscratch.autoReload": { "type": "boolean", "default": true, "description": "Reload the game viewer after each successful build." },
+        "texttoscratch.keepRunning": { "type": "boolean", "default": true, "description": "When the viewer reloads, press the green flag again if the game was running." }
+      }
+    }
+  },
+  "scripts": {
+    "build": "node build.mjs",
+    "package": "node build.mjs && vsce package --no-dependencies",
+    "test": "node build.mjs && node test/run.mjs"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.85.0",
+    "@vscode/test-electron": "^2.4.1",
+    "@vscode/vsce": "^3.2.1"
+  }
+}
