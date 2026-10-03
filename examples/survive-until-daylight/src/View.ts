@@ -20,6 +20,9 @@ import {
   C_BN_INJURED, C_BN_HOOKED, C_BN_WIGGLED, C_BN_FREED, C_MENU_MAIN, C_MENU_CONNECTING, C_MENU_WAITING, C_MENU_ROLE, C_CS_BG,
   C_KS_BG, C_CS_FRAME, C_CS_FRAME_SEL, C_KS_FRAME, C_KS_FRAME_SEL, C_CS_INFO0, C_KS_INFO0, C_CS_RANDOM, C_RES_PANEL,
   C_RES_ESCAPED, C_RES_DEAD, C_RES_K0, C_NM0, C_KNM0, C_LB_ESCAPED, C_LB_DEAD, C_LB_SPECTATE, C_LB_WAITMATCH,
+  C_HUD_TIMER, C_HUD_TIMER_RED, C_HUD_COLLAPSE2, C_FACE_YOU, C_BN_LOCKED, C_BN_MINUTE, C_TC_BASE, C_TC_KNOB, C_TC_ACT, C_TC_USE,
+  C_TC_HEAL, C_TC_CHAT, C_TC_PH0, C_MENU_TOUCH_OFF, C_CS_DAWN, C_CS_DARK, C_CS_MOON, C_CS_BARS, C_CS_T_ESCAPED, C_CS_T_DEAD,
+  C_CS_T_KILLER, C_CS_T_SURVIVORS, C_CS_S_ESCAPED, C_CS_S_DEAD, C_CS_S_KILLS, C_CS_S_TIME, C_CS_S_SURVIVORS, C_CS_SKIP,
 } from "./lib/ids";
 
 const MW = 28;
@@ -35,6 +38,9 @@ const HOOK_STAGE = 45; // seconds per hook stage
 const GEN_TIME = 45; // seconds for one survivor to repair a generator
 const GATE_TIME = 10;
 const COLLAPSE = 90;
+const MATCH_TIME = 420; // seconds until dawn: then the gates lock and the killer wins
+const JX = -160; // touch joystick centre
+const JY = -112;
 // costumes per character: survivors 10 (front a/b, back a/b, left a/b, right a/b, down, hooked), killers 10 (8 walk, attack, stunned)
 const SC_DOWN = 8;
 const SC_HOOKED = 9;
@@ -258,6 +264,31 @@ let lastGensDone = 0;
 let lastPowered = false;
 let lastOpen = false;
 let myOutcome = 0;
+let hTime = MATCH_TIME; // seconds left until the gates lock
+let timeUp = 0;
+let warnedMinute = false;
+let tickAt = 0;
+// cutscenes (queued: 1 escaped, 2 sacrificed, 3 killer wins, 4 survivors win)
+const csQ: number[] = [];
+let csKind = 0;
+let csAt = 0;
+let csPrevSkip = true;
+// input (keyboard + touch)
+let kFwd = 0;
+let kStr = 0;
+let kTurn = 0;
+let kSpace = false;
+let kE = false;
+let kQ = false;
+let kF = false;
+let kA = false;
+let kD = false;
+let tBtn = 0;
+let prevTBtn = 0;
+let joyX = 0;
+let joyY = 0;
+let chatOpen = false;
+let showHeal = false;
 let prevResClick = true;
 let resultsAt = 0;
 
@@ -862,6 +893,8 @@ function newMatch() {
   noiseCell = 0;
   hPhase = 1;
   matchAt = timer();
+  hTime = MATCH_TIME;
+  timeUp = 0;
 }
 
 /** Host: give humans who joined mid-match a bot's body, and hand disconnected humans' bodies to bots. */
@@ -1136,6 +1169,16 @@ function hostRules(dt: number) {
       genP[g] = Math.max(0, genP[g] - 0.35 * dt);
       if (genP[g] <= 0) genReg[g] = 0;
     }
+  }
+  // dawn: the gates lock and whoever is still inside is lost
+  hTime = hTime - dt;
+  if (hTime <= 0 && timeUp === 0) {
+    hTime = 0;
+    timeUp = 1;
+    for (let a = 1; a < NA; a++) {
+      if (agSt[a] <= 4) agSt[a] = 5;
+    }
+    if (agSt[0] === 2) agSt[0] = 0;
   }
   if (collapseT > 0) {
     collapseT = collapseT - dt;
@@ -1861,20 +1904,87 @@ function updateSkill(spaceEdge: boolean) {
   if (ang > scZone + scWidth + 10) skillResult(0);
 }
 
+/** Keyboard and touch input for this frame (sets kFwd, kStr, kTurn, kSpace, kE, kQ, kF, kA, kD). */
+/** @warp */
+function readInput() {
+  kFwd = 0;
+  if (keyPressed("w") || keyPressed("up arrow")) kFwd++;
+  if (keyPressed("s") || keyPressed("down arrow")) kFwd--;
+  kStr = 0;
+  if (keyPressed("d")) kStr++;
+  if (keyPressed("a")) kStr--;
+  kTurn = 0;
+  if (keyPressed("right arrow")) kTurn++;
+  if (keyPressed("left arrow")) kTurn--;
+  kSpace = keyPressed("space");
+  kE = keyPressed("e");
+  kQ = keyPressed("q");
+  kF = keyPressed("f");
+  kA = keyPressed("a") || keyPressed("left arrow");
+  kD = keyPressed("d") || keyPressed("right arrow");
+  if (kFwd !== 0 || kStr !== 0 || kTurn !== 0 || kE) game.touch = false; // a keyboard player: hide the touch buttons
+  tBtn = 0;
+  joyX = 0;
+  joyY = 0;
+  if (!game.touch || !mouseDown()) {
+    prevTBtn = 0;
+    return;
+  }
+  // one pointer (Scratch tracks a single touch): joystick, a button, or drag on the screen to look around
+  const x = mouseX();
+  const y = mouseY();
+  tBtn = 99;
+  if ((x - JX) * (x - JX) + (y - JY) * (y - JY) < 75 * 75) tBtn = 1;
+  else if ((x - 190) * (x - 190) + (y + 100) * (y + 100) < 40 * 40) tBtn = 2;
+  else if (Math.abs(x - 110) < 35 && Math.abs(y + 142) < 22) tBtn = 3;
+  else if (showHeal && Math.abs(x - 110) < 35 && Math.abs(y + 88) < 19) tBtn = 4;
+  else if (Math.abs(x - 214) < 22 && Math.abs(y - 150) < 22) tBtn = 5;
+  else if (!offline && Math.abs(x - 214) < 30 && Math.abs(y - 100) < 16) tBtn = 6;
+  else if (chatOpen && Math.abs(x) < 85 && y < 95 && y > -85) tBtn = 20 + Math.floor((95 - y) / 30);
+  if (tBtn === 1) {
+    joyX = Math.max(-45, Math.min(45, x - JX));
+    joyY = Math.max(-45, Math.min(45, y - JY));
+    if (Math.abs(joyY) > 8) kFwd = joyY / 40;
+    if (Math.abs(joyX) > 8) kTurn = joyX / 40;
+  }
+  if (tBtn === 2) kSpace = true;
+  if (tBtn === 3) kE = true;
+  if (tBtn === 4) kF = true;
+  if (tBtn === 5) kQ = true;
+  if (tBtn === 99) kTurn = Math.max(-1, Math.min(1, x / 140));
+  const edge = tBtn !== prevTBtn;
+  if (edge && tBtn === 6) chatOpen = !chatOpen;
+  if (edge && tBtn >= 20 && tBtn < 26) {
+    game.chatSend = tBtn - 19;
+    chatOpen = false;
+  }
+  prevTBtn = tBtn;
+}
+
+/** On-screen touch controls. */
+/** @warp */
+function drawTouch() {
+  if (!game.touch || hPhase !== 1 || myAgent < 0) return;
+  clearEffects();
+  me.size = 100;
+  stampAt(C_TC_BASE, JX, JY);
+  stampAt(C_TC_KNOB, JX + joyX, JY + joyY);
+  stampAt(C_TC_ACT, 190, -100);
+  stampAt(C_TC_USE, 110, -142);
+  if (showHeal) stampAt(C_TC_HEAL, 110, -88);
+  if (!offline) stampAt(C_TC_CHAT, 214, 100);
+  if (chatOpen) {
+    for (let i = 0; i < 6; i++) stampAt(C_TC_PH0 + i, 0, 80 - i * 30);
+  }
+}
+
 /** Movement for the local player: speed per role and state, sliding collision, stairs. */
 /** @warp */
 function moveLocal(dt: number, spd0: number, k: number) {
   let speed = spd0;
-  let turn = 0;
-  if (keyPressed("right arrow")) turn++;
-  if (keyPressed("left arrow")) turn--;
-  pa += turn * 160 * dt;
-  let fwd = 0;
-  if (keyPressed("w") || keyPressed("up arrow")) fwd++;
-  if (keyPressed("s") || keyPressed("down arrow")) fwd--;
-  let str = 0;
-  if (keyPressed("d")) str++;
-  if (keyPressed("a")) str--;
+  pa += Math.max(-1, Math.min(1, kTurn)) * 160 * dt;
+  let fwd = Math.max(-1, Math.min(1, kFwd));
+  let str = kStr;
   moving = fwd !== 0 || str !== 0;
   if (timer() < dashUntil) {
     fwd = 1;
@@ -1888,8 +1998,9 @@ function moveLocal(dt: number, spd0: number, k: number) {
   let mx = ca * fwd - sa * str;
   let my = sa * fwd + ca * str;
   const ml = Math.sqrt(mx * mx + my * my);
-  mx = (mx / ml) * speed * dt;
-  my = (my / ml) * speed * dt;
+  const mag = Math.min(1, ml); // half a joystick push = half speed
+  mx = (mx / ml) * speed * mag * dt;
+  my = (my / ml) * speed * mag * dt;
   moveBox(px, py, mx, my, k);
   px = mvX;
   py = mvY;
@@ -1931,8 +2042,9 @@ function survivorControls(dt: number, eHeld: boolean, spaceEdge: boolean, qEdge:
     barFrac = agProg[a] / 100;
     barCol = "#9CFF7A";
     let k = 0;
-    if (keyPressed("a") || keyPressed("left arrow")) k = 1;
-    if (keyPressed("d") || keyPressed("right arrow")) k = 2;
+    if (kA) k = 1;
+    if (kD) k = 2;
+    if (spaceEdge) k = 3 - Math.max(1, lastWig); // touch: tap ACT over and over
     if (k > 0 && k !== lastWig) {
       lastWig = k;
       wigAt = timer();
@@ -2100,11 +2212,12 @@ function survivorControls(dt: number, eHeld: boolean, spaceEdge: boolean, qEdge:
       }
     }
     // Self-Care
+    showHeal = st === 1 && mySkin === 3;
     if (!did && st === 1 && mySkin === 3) {
       promptC = C_PR_SELFCARE;
       barFrac = agProg[a] / 100;
       barCol = "#7CC444";
-      if (keyPressed("f") && !busy) {
+      if (kF && !busy) {
         myDo = 6;
         myDoT = a;
       }
@@ -2301,14 +2414,14 @@ function updateLocal(dt: number) {
   }
   game.weapon = -1;
   game.carrying = false;
-  const space = keyPressed("space");
+  const space = kSpace;
   const spaceEdge = space && !prevSpace;
   prevSpace = space;
-  const click = mouseDown();
+  const click = mouseDown() && !game.touch;
   const clickEdge = click && !prevClick;
   prevClick = click;
-  const eHeld = keyPressed("e");
-  const q = keyPressed("q");
+  const eHeld = kE;
+  const q = kQ;
   const qEdge = q && !prevQ;
   prevQ = q;
   bob = bob * 0.8;
@@ -2547,6 +2660,8 @@ function netWriteWorld() {
     if (sk < 0) sk = 0;
     s = s + agSlot[a] + sk + ax + ay + aa + agSt[a] + Math.min(9, agStage[a]) + ap + agAnim[a] + agFx[a];
   }
+  const tl = Net.pad(Math.max(0, Math.min(999, Math.ceil(hTime))), 3);
+  s = s + tl + timeUp;
   wcloud.w = s as unknown as number;
 }
 
@@ -2554,7 +2669,7 @@ function netWriteWorld() {
 /** @warp */
 function readWorld() {
   const v = String(wcloud.w);
-  if (v.length < 128) return;
+  if (v.length < 137) return;
   const sq = num(v, 1, 2);
   if (sq === lastWSeq) return;
   lastWSeq = sq;
@@ -2595,6 +2710,8 @@ function readWorld() {
     agAnim[a] = Number(v[o + 16]);
     agFx[a] = Number(v[o + 17]);
   }
+  hTime = num(v, 133, 3);
+  timeUp = Number(v[136]);
 }
 
 /** @warp */
@@ -2653,16 +2770,10 @@ function noticeChanges() {
         if (st === 1 && was === 3 && a === myAgent) showBanner(C_BN_WIGGLED);
         if (st < was && st <= 1 && was <= 2) playAt("heal", x, y, 70);
         if (st === 5) {
-          playAt("sacrifice", x, y, 100);
-          if (a === myAgent) showBanner(C_BN_DEAD);
+          if (a === myAgent) csQ.push(2);
+          else playAt("sacrifice", x, y, 100);
         }
-        if (st === 6) {
-          if (a === myAgent) {
-            me.volume = 100;
-            playSound("escape");
-            showBanner(C_BN_ESCAPED);
-          }
-        }
+        if (st === 6 && a === myAgent) csQ.push(1);
       }
       prevSt[a] = st;
     }
@@ -3164,81 +3275,123 @@ function stateIcon(a: number): number {
 /** The skill check ring: a needle sweeps clockwise; press SPACE inside the white zone (the bright start is GREAT). */
 /** @warp */
 function drawSkill() {
+  let oy = 0;
+  if (game.touch) oy = 50; // keep it clear of the thumbs
   if (timer() < scResultUntil) {
     me.size = 100;
-    stampAt(scResultC, 0, 60);
+    if (game.touch) {
+      me.size = 70;
+      stampAt(scResultC, 0, 108);
+    } else stampAt(scResultC, 0, -72);
   }
   if (!scOn) return;
   me.size = 100;
-  stampAt(C_SC_RING, 0, 0);
+  stampAt(C_SC_RING, 0, oy);
   const r = 44;
   for (let k = 0; k < scWidth; k += 4) {
     const a0 = scZone + k;
     const a1 = Math.min(scZone + scWidth, a0 + 4);
-    Draw.line(sin(a0) * r, cos(a0) * r, sin(a1) * r, cos(a1) * r, 7, k < 12 ? "#FFFFFF" : "#C8C2A8");
+    Draw.line(sin(a0) * r, oy + cos(a0) * r, sin(a1) * r, oy + cos(a1) * r, 8, k < 12 ? "#FFFFFF" : "#C8C2A8");
   }
   const t = timer() - scStart;
   if (t >= 0) {
     const ang = (t / 1.15) * 360;
-    Draw.line(0, 0, sin(ang) * (r + 6), cos(ang) * (r + 6), 4, "#E8322A");
+    Draw.line(0, oy, sin(ang) * (r + 8), oy + cos(ang) * (r + 8), 4, "#E8322A");
   }
 }
 
+/** m:ss with the digit costumes, centred at (x, y). */
+/** @warp */
+function drawClock(secs: number, x: number, y: number) {
+  const s = Math.max(0, Math.ceil(secs));
+  const m = Math.floor(s / 60);
+  const r = s % 60;
+  me.size = 90;
+  switchCostume(C_D0 + m);
+  goTo(x - 22, y);
+  stamp();
+  switchCostume(C_DCOLON);
+  goTo(x - 10, y);
+  stamp();
+  switchCostume(C_D0 + Math.floor(r / 10));
+  goTo(x + 2, y);
+  stamp();
+  switchCostume(C_D0 + (r % 10));
+  goTo(x + 16, y);
+  stamp();
+}
+
+/** HUD layout (no overlaps): generators top-left, the dawn timer top-centre, my perk top-right, the survivors down the
+ * left edge, banners in the middle band, prompts and the action bar at the bottom (higher up with touch controls). */
 /** @warp */
 function drawHud(viewer: number) {
   clearEffects();
   me.size = 100;
-  // generators left / gates
-  if (powered) {
-    stampAt(C_HUD_GATES, -150, 160);
-    if (collapseT > 0) {
-      me.size = 100;
-      stampAt(C_HUD_COLLAPSE, -176, 122);
-      drawNum(collapseT, -140, 122, 90, 0);
-    }
-  } else {
+  // generators left / gates powered
+  if (powered) stampAt(C_HUD_GATES, -150, 160);
+  else {
     stampAt(C_HUD_GENS, -176, 160);
     drawNum(5 - gensDone, -142, 160, 110, 0);
   }
-  // survivors
-  for (let a = 1; a < NA; a++) {
-    const y = 96 - (a - 1) * 50;
-    me.size = 100;
-    stampAt(C_FACE0 + Math.max(0, agSkin[a]), -214, y);
-    me.size = 80;
-    const ic = stateIcon(a);
-    stampAt(ic, -186, y - 10);
-    me.size = 100;
-    if (agStage[a] >= 1 && agSt[a] <= 4) stampAt(C_ST_PIP, -168, y - 10);
-    if (agStage[a] >= 2 && agSt[a] <= 4) stampAt(C_ST_PIP, -159, y - 10);
-    if (agSt[a] === 4) Draw.bar(-236, y - 24, 44, 4, agProg[a] / 100, "#E85A4A", "#2A1010");
-    if (a === myAgent) stampAt(C_HUD_YOU, -160, y + 6);
-    else if (agSlot[a] === 0) stampAt(C_HUD_BOT, -160, y + 6);
+  // the dawn timer (or the collapse, whichever comes first)
+  me.size = 100;
+  let left = hTime;
+  let panel = C_HUD_TIMER;
+  if (hTime < 60) panel = C_HUD_TIMER_RED;
+  if (collapseT > 0 && collapseT < hTime) {
+    left = collapseT;
+    panel = C_HUD_COLLAPSE2;
+  }
+  stampAt(panel, 0, 160);
+  drawClock(left, 14, 160);
+  if (left < 10 && timer() > tickAt && hPhase === 1) {
+    tickAt = timer() + 1;
+    me.volume = 60;
+    playSound("tick");
+  }
+  if (hTime < 60 && !warnedMinute && hPhase === 1) {
+    warnedMinute = true;
+    showBanner(C_BN_MINUTE);
   }
   me.size = 100;
-  if (viewer === 0 || myAgent === 0) stampAt(C_KFACE0 + Math.max(0, agSkin[0]), -214, -110);
-  // my perk / power
+  if (mapId === 1) stampAt(C_HUD_FLOOR0 + camFloor, 0, 130);
+  // survivors down the left edge: portrait, state badge, hook pips, hook timer
+  for (let a = 1; a < NA; a++) {
+    const y = 112 - (a - 1) * 40;
+    me.size = 82;
+    stampAt(C_FACE0 + Math.max(0, agSkin[a]), -218, y);
+    if (a === myAgent) stampAt(C_FACE_YOU, -218, y);
+    me.size = 62;
+    const ic = stateIcon(a);
+    stampAt(ic, -201, y - 10);
+    me.size = 100;
+    if (agStage[a] >= 1 && agSt[a] <= 4) stampAt(C_ST_PIP, -202, y + 12);
+    if (agStage[a] >= 2 && agSt[a] <= 4) stampAt(C_ST_PIP, -193, y + 12);
+    if (agSt[a] === 4) Draw.bar(-235, y - 20, 34, 4, agProg[a] / 100, "#E85A4A", "#2A1010");
+  }
+  // my perk / power (tap it on touch screens)
   if (myAgent >= 0) {
     me.size = 100;
-    let ic = C_PERK0 + mySkin;
-    if (myAgent === 0) ic = C_POWER0 + myKSkin;
-    stampAt(ic, 214, 150);
-    if (timer() < qReadyAt) {
-      Draw.bar(194, 124, 40, 5, 1 - (qReadyAt - timer()) / 40, "#B8A8E8", "#1A1426");
-    }
-  }
-  if (mapId === 1 && hPhase === 1) {
-    me.size = 100;
-    stampAt(C_HUD_FLOOR0 + camFloor, 0, 166);
+    let ic2 = C_PERK0 + mySkin;
+    if (myAgent === 0) ic2 = C_POWER0 + myKSkin;
+    if (timer() < qReadyAt) setEffect("ghost", 50);
+    stampAt(ic2, 214, 150);
+    clearEffects();
+    if (timer() < qReadyAt) Draw.bar(194, 124, 40, 5, 1 - (qReadyAt - timer()) / 40, "#B8A8E8", "#1A1426");
   }
   // prompt and action bar
   me.size = 100;
-  if (promptC > 0 && myAgent >= 0 && hPhase === 1) stampAt(promptC, 0, -120);
-  if (barFrac >= 0 && hPhase === 1) Draw.bar(-80, -142, 160, 10, Math.min(1, barFrac), barCol, "#1A1C1A");
+  let py0 = -122;
+  if (game.touch) {
+    py0 = -30;
+    me.size = 62;
+  }
+  if (promptC > 0 && myAgent >= 0 && hPhase === 1) stampAt(promptC, 0, py0);
+  if (barFrac >= 0 && hPhase === 1) Draw.bar(-80, py0 - 18, 160, 9, Math.min(1, barFrac), barCol, "#1A1C1A");
   drawSkill();
-  if (timer() < bannerUntil) {
-    me.size = 100;
-    stampAt(bannerC, 0, 96);
+  if (timer() < bannerUntil && !scOn) {
+    me.size = 80;
+    stampAt(bannerC, 0, 78);
   }
 }
 
@@ -3269,7 +3422,7 @@ function terror() {
     const f = facingFrom(rX[0], rY[0], rA[0], px, py, 13, 0.75);
     if (f) {
       me.size = 100;
-      stampAt(C_EYE, 0, 140);
+      stampAt(C_EYE, 168, 150);
     }
   }
 }
@@ -3295,6 +3448,12 @@ function menus() {
   game.weapon = -1;
   if (mode === 1) {
     stampAt(C_MENU_MAIN, 0, 0);
+    stampAt(C_MENU_TOUCH_OFF + (game.touch ? 1 : 0), 0, -63);
+    if (edge && Math.abs(mouseX()) < 85 && Math.abs(mouseY() + 63) < 13) {
+      game.touch = !game.touch;
+      me.volume = 60;
+      playSound("click");
+    }
     if (edge) {
       const b1 = inRect(120, 120, 240, 46);
       const b2 = inRect(120, 180, 240, 46);
@@ -3514,6 +3673,7 @@ function frame() {
     return;
   }
   // in game
+  readInput();
   if (hGame !== myGame && hPhase === 1) {
     myGame = hGame;
     myAgent = -1;
@@ -3528,6 +3688,9 @@ function frame() {
       rY[a] = agY[a];
     }
     matchAt = timer();
+    warnedMinute = false;
+    csQ.length = 0;
+    csKind = 0;
     showBanner(myRole === 2 ? (mapId === 1 ? C_BN_HOUSE_K : C_BN_FIELD_K) : mapId === 1 ? C_BN_HOUSE : C_BN_FIELD);
     stopAllSounds();
     me.volume = 100;
@@ -3552,14 +3715,12 @@ function frame() {
   noticeChanges();
   netSend();
   if (hPhase === 2 && lastPhase !== 2) {
-    stopAllSounds();
-    me.volume = 100;
     let kills = 0;
     for (let a = 1; a < NA; a++) {
       if (agSt[a] === 5) kills++;
     }
-    if (myRole === 2) playSound(kills >= 2 ? "win" : "lose");
-    else playSound(myOutcome === 6 ? "win" : "lose");
+    if (timeUp === 1 || kills >= 3) csQ.push(3);
+    else csQ.push(4);
     onResults = true;
     prevResClick = true;
     resultsAt = timer();
@@ -3574,6 +3735,13 @@ function frame() {
   if (viewer === myAgent && myAgent > 0 && agSt[myAgent] === 3) horizon = -30 + sin(timer() * 300) * 6;
   if (viewer === myAgent && myAgent > 0 && agSt[myAgent] === 4) horizon = 25;
   penClear();
+  // cutscenes take over the screen
+  if (csKind === 0 && csQ.length > 0) startCutscene();
+  if (csKind > 0) {
+    game.weapon = -1;
+    drawCutscene();
+    return;
+  }
   if (hPhase === 0 || (hPhase === 2 && !onResults)) {
     clearEffects();
     me.size = 100;
@@ -3610,6 +3778,7 @@ function frame() {
     return;
   }
   drawHud(viewer);
+  drawTouch();
   if (viewer !== myAgent || myAgent < 0) {
     me.size = 100;
     if (myAgent < 0) stampAt(C_LB_WAITMATCH, 0, 40);
@@ -3628,10 +3797,104 @@ function frame() {
   }
 }
 
+/** @warp */
+function startCutscene() {
+  csKind = csQ[0];
+  csQ.remove(0);
+  csAt = timer();
+  csPrevSkip = true;
+  scOn = false;
+  stopAllSounds();
+  me.volume = 100;
+  if (csKind === 1) playSound("escape");
+  if (csKind === 2) playSound("sacrifice");
+  if (csKind === 3) {
+    playSound("laugh");
+    if (timeUp === 1) playSound("lock");
+  }
+  if (csKind === 4) playSound("win");
+}
+
+/** Escaping, being sacrificed, the killer winning, the survivors winning: about five seconds each (skippable). */
+/** @warp */
+function drawCutscene() {
+  const t = timer() - csAt;
+  clearEffects();
+  me.size = 100;
+  if (csKind === 1 || csKind === 4) stampAt(C_CS_DAWN, 0, 0);
+  else if (csKind === 2) stampAt(C_CS_DARK, 0, 0);
+  else stampAt(C_CS_MOON, 0, 0);
+  let title = C_CS_T_ESCAPED;
+  let sub = C_CS_S_ESCAPED;
+  if (csKind === 1) {
+    // walking off into the sunrise
+    me.size = Math.max(30, 175 - t * 32);
+    setEffect("ghost", Math.max(0, (t - 3.2) * 60));
+    stampAt(C_S0_FRONTA + Math.max(0, mySkin) * 10 + 2 + (Math.floor(t * 4) % 2), sin((t * 3) * 57.3) * 4, -70 + t * 16);
+  } else if (csKind === 2) {
+    title = C_CS_T_DEAD;
+    sub = C_CS_S_DEAD;
+    me.size = 170;
+    setEffect("brightness", -40);
+    stampAt(C_HOOK, 0, -40);
+    setEffect("brightness", -Math.min(80, t * 20));
+    setEffect("ghost", Math.max(0, (t - 1.2) * 35));
+    stampAt(C_S0_FRONTA + Math.max(0, mySkin) * 10 + SC_HOOKED, sin((t * 9) * 57.3) * 3, -20 + Math.max(0, t - 1.2) * 30);
+    clearEffects();
+    for (let i = 0; i < 4; i++) {
+      me.size = 90 + i * 15;
+      stampAt(C_FX_CROW, ((t * 160 + i * 140) % 560) - 280, 60 + i * 22 + sin((t * 6 + i) * 57.3) * 8);
+    }
+  } else if (csKind === 3) {
+    title = C_CS_T_KILLER;
+    sub = timeUp === 1 ? C_CS_S_TIME : C_CS_S_KILLS;
+    const g = Math.min(1, t / 2.2);
+    me.size = 70 + g * 150;
+    setEffect("brightness", -100 + g * 100);
+    let kc = C_K0_FRONTA + Math.max(0, agSkin[0]) * 10;
+    if (t > 2.4 && Math.floor(t * 2) % 2 === 0) kc = kc + KC_ATK;
+    stampAt(kc, 0, -150 + 70 + g * 60);
+  } else {
+    title = C_CS_T_SURVIVORS;
+    sub = C_CS_S_SURVIVORS;
+    let n = 0;
+    for (let a = 1; a < NA; a++) {
+      if (agSt[a] === 6) n++;
+    }
+    let i = 0;
+    for (let a2 = 1; a2 < NA; a2++) {
+      if (agSt[a2] === 6) {
+        me.size = 95;
+        stampAt(C_S0_FRONTA + Math.max(0, agSkin[a2]) * 10 + (Math.floor(t * 3 + a2) % 2), (i - (n - 1) / 2) * 95, -70 + Math.abs(sin((t * 4 + a2) * 57.3)) * 8);
+        i++;
+      }
+    }
+  }
+  clearEffects();
+  me.size = 100;
+  stampAt(C_CS_BARS, 0, 0);
+  if (t > 0.6) {
+    setEffect("ghost", Math.max(0, 100 - (t - 0.6) * 220));
+    me.size = 100 + Math.max(0, 1.2 - t) * 30;
+    stampAt(title, 0, 108);
+    me.size = 100;
+    setEffect("ghost", Math.max(0, 100 - (t - 1.2) * 200));
+    stampAt(sub, 0, 62);
+    clearEffects();
+  }
+  if (t > 1.2) stampAt(C_CS_SKIP, 0, -162);
+  const skip = mouseDown() || keyPressed("space");
+  if ((skip && !csPrevSkip && t > 1.2) || t > 5.5) {
+    csKind = 0;
+    prevResClick = true;
+  }
+  csPrevSkip = skip;
+}
+
 /** Pick (and keep) a survivor to watch; Q / E switch. */
 /** @warp */
 function spectate(): number {
-  const k = keyPressed("q") || keyPressed("e");
+  const k = kQ || kE || kSpace;
   const edge = k && !prevSpecKey;
   prevSpecKey = k;
   if (specA < 1 || agSt[specA] >= 5 || edge) {
@@ -3697,6 +3960,12 @@ whenFlag(() => {
   kPowerReady = 20;
   kIgnoreUntil = 0;
   prevFx = 0;
+  hTime = MATCH_TIME;
+  timeUp = 0;
+  csQ.length = 0;
+  csKind = 0;
+  chatOpen = false;
+  tickAt = 0;
   prevClick = true;
   game.weapon = -1;
   forever(() => {

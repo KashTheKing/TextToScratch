@@ -13,6 +13,7 @@ export const game = {
   weapon: -1, // killer weapon to show in first person (-1 none)
   swingAt: -9,
   carrying: false,
+  touch: false, // on-screen touch controls
 };
 
 whenFlag(() => {
@@ -23,6 +24,7 @@ whenFlag(() => {
   game.weapon = -1;
   game.swingAt = -9;
   game.carrying = false;
+  game.touch = false;
   forever(() => {
     playSoundUntilDone("ambience");
   });

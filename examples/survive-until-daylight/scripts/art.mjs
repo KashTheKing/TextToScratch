@@ -544,7 +544,7 @@ addY("aura_down", svg(40, 40, `<circle cx="20" cy="20" r="17" fill="#0B0E10" opa
 // ---------------------------------------------------------------- HUD
 for (let d = 0; d <= 9; d++) addY(`d${d}`, svg(20, 28, T(10, 24, 26, d)));
 addY("dcolon", svg(12, 28, T(6, 23, 24, ":")));
-const panel = (w, h, inner, stroke = "#C8C2A8") => svg(w, h, `<rect x="1" y="1" width="${w - 2}" height="${h - 2}" rx="8" fill="#0B0E10" opacity=".62" stroke="${stroke}" stroke-opacity=".4" stroke-width="2"/>${inner}`);
+const panel = (w, h, inner, stroke = "#C8C2A8") => svg(w, h, `<rect x="1" y="1" width="${w - 2}" height="${h - 2}" rx="8" fill="#0B0E10" opacity=".78" stroke="${stroke}" stroke-opacity=".55" stroke-width="2"/>${inner}`);
 // survivor portraits (head and shoulders, 44 x 44) and killer portraits
 SURV.forEach((p, i) => addY(`face${i}`, svg(44, 44, `<circle cx="22" cy="22" r="21" fill="#1A1E22" stroke="#C8C2A8" stroke-width="1.5"/><g transform="translate(22 24) scale(0.62) translate(-80 -34)"><path d="M54 66 Q80 52 106 66 L108 80 H52Z" fill="${p.top}"/>${head(p, "front", 80, 32)}</g>`)));
 KILL.forEach((k, i) => addY(`kface${i}`, svg(44, 44, `<circle cx="22" cy="22" r="21" fill="#2A0E10" stroke="#E85A4A" stroke-width="1.5"/><g transform="translate(22 24) scale(0.62) translate(-80 -30)"><path d="M50 62 Q80 48 110 62 L112 80 H48Z" fill="${k.coat}"/>${mask(k, "front", 80, 28)}</g>`)));
@@ -647,10 +647,10 @@ const moonBg = `<rect width="480" height="360" fill="url(#mbg)"/><circle cx="400
 const moonDefs = vgrad("mbg", "#06080E", "#2A1E2A") + radial("mmo", "#C8D4D8", "#C8D4D8", 0.4, 0);
 const btn = (x, y, w, h, label, col = "#F09A3A", size = 20) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="10" fill="#1A0E10" stroke="${col}" stroke-width="3"/>` + T(x + w / 2, y + h / 2 + size * 0.36, size, label, "#FFE8C8");
 addY("menu_main", svg(480, 360, moonBg + title() + btn(120, 120, 240, 46, "PLAY SOLO (WITH BOTS)") + btn(120, 180, 240, 46, "PLAY ONLINE") +
-  T(240, 256, 12, "WASD move  -  Arrows turn  -  E hold to interact  -  SPACE act / attack", "#C8C2A8") +
-  T(240, 274, 12, "Q perk / power  -  F self-heal  -  Z X C V B N quick chat (online)", "#C8C2A8") +
-  T(240, 300, 12, "Survivors: fix 5 generators, open an exit gate and escape.", "#E8D8B8") +
-  T(240, 318, 12, "Killer: catch survivors, carry them to hooks before they get away.", "#E8D8B8"), moonDefs + titleDefs));
+  T(240, 270, 12, "WASD move  -  Arrows turn  -  E hold to interact  -  SPACE act / attack", "#C8C2A8") +
+  T(240, 288, 12, "Q perk / power  -  F self-heal  -  Z X C V B N quick chat (online)", "#C8C2A8") +
+  T(240, 314, 12, "Survivors: fix 5 generators, open an exit gate and escape before dawn.", "#E8D8B8") +
+  T(240, 332, 12, "Killer: hang survivors on hooks - when the timer runs out, the gates lock.", "#E8D8B8"), moonDefs + titleDefs));
 addY("menu_connecting", svg(480, 360, moonBg + title() + T(240, 190, 22, "Connecting to the session...", "#F4F1E6"), moonDefs + titleDefs));
 addY("menu_waiting", svg(480, 360, moonBg + title() + T(240, 170, 22, "Waiting for the next match...", "#F4F1E6") + T(240, 200, 14, "A match is wrapping up. You'll be pulled in automatically.", "#C8C2A8"), moonDefs + titleDefs));
 // role select: two cards
@@ -690,6 +690,56 @@ addY("lb_dead", svg(110, 20, T(55, 15, 14, "SACRIFICED", "#E85A4A")));
 addY("lb_spectate", svg(240, 22, T(120, 17, 14, "SPECTATING", "#C8C2A8")));
 addY("lb_waitmatch", svg(320, 26, T(160, 19, 15, "Joining the match...", "#F4F1E6")));
 
+
+// ---------------------------------------------------------------- round 2: timer, touch controls, cutscenes
+addY("hud_timer", panel(132, 40, `<circle cx="20" cy="20" r="9" fill="#FFC850"/><g stroke="#FFC850" stroke-width="2.5" stroke-linecap="round">` +
+  [0, 45, 90, 135, 180, 225, 270, 315].map((a) => `<path d="M${20 + Math.cos(a * Math.PI / 180) * 12} ${20 + Math.sin(a * Math.PI / 180) * 12} L${20 + Math.cos(a * Math.PI / 180) * 16} ${20 + Math.sin(a * Math.PI / 180) * 16}"/>`).join("") + `</g>`, "#FFC850"));
+addY("hud_timer_red", panel(132, 40, `<path d="M26 8 a12 12 0 1 0 0 24 a9 9 0 1 1 0 -24z" fill="#E85A4A"/>`, "#E85A4A"));
+addY("hud_collapse2", panel(132, 40, `<path d="M12 30 l8 -20 l8 20z" fill="#E85A4A" stroke="#200" stroke-width="1.5"/><path d="M20 16 v7 M20 26 v1" stroke="#FFF" stroke-width="2.5"/>`, "#E85A4A"));
+addY("face_you", svg(44, 44, `<circle cx="22" cy="22" r="20" fill="none" stroke="#F2D16A" stroke-width="3.5"/>`));
+addY("bn_locked", banner("THE GATES ARE LOCKED", "#E85A4A", "Daylight never came..."));
+addY("bn_minute", banner("1 MINUTE TO DAWN", "#FFC850", "Get out before the gates lock!"));
+// touch controls
+const tb = (w, h, inner, col = "#F4F1E6") => svg(w, h, `<rect x="2" y="2" width="${w - 4}" height="${h - 4}" rx="${Math.min(w, h) / 3}" fill="#0B0E10" opacity=".6" stroke="${col}" stroke-width="3"/>${inner}`);
+addY("tc_base", svg(120, 120, `<circle cx="60" cy="60" r="56" fill="#0B0E10" opacity=".45" stroke="#F4F1E6" stroke-opacity=".7" stroke-width="3"/>` +
+  [0, 90, 180, 270].map((r) => `<path d="M60 10 l8 10 h-16z" fill="#F4F1E6" opacity=".7" transform="rotate(${r} 60 60)"/>`).join("")));
+addY("tc_knob", svg(50, 50, `<circle cx="25" cy="25" r="22" fill="#F4F1E6" opacity=".75" stroke="#0B0E10" stroke-width="2"/>`));
+addY("tc_act", svg(76, 76, `<circle cx="38" cy="38" r="35" fill="#5A0E0A" opacity=".7" stroke="#FF8A6A" stroke-width="3"/>` + T(38, 44, 16, "ACT", "#FFD0C0")));
+addY("tc_use", tb(66, 42, T(33, 27, 15, "USE (E)", "#F2D16A"), "#F2D16A"));
+addY("tc_heal", tb(66, 36, T(33, 24, 14, "HEAL", "#9CFF7A"), "#9CFF7A"));
+addY("tc_chat", tb(56, 30, T(28, 20, 12, "CHAT", "#F4F1E6")));
+["Hi!", "Good game!", "Follow me!", "Nice!", "Oops!", "Bye!"].forEach((p, i) => addY(`tc_ph${i}`, tb(170, 30, T(85, 21, 15, p, "#F4F1E6"))));
+addY("menu_touch_off", tb(170, 26, T(85, 18, 12, "TOUCH CONTROLS: OFF", "#C8C2A8")));
+addY("menu_touch_on", tb(170, 26, T(85, 18, 12, "TOUCH CONTROLS: ON", "#9CFF7A"), "#9CFF7A"));
+// cutscenes
+let rays = "";
+for (let i = 0; i < 14; i++) { const a = -170 + i * 12; rays += `<path d="M240 250 L${240 + Math.cos(a * Math.PI / 180) * 700} ${250 + Math.sin(a * Math.PI / 180) * 700} L${240 + Math.cos((a + 5) * Math.PI / 180) * 700} ${250 + Math.sin((a + 5) * Math.PI / 180) * 700}Z" fill="#FFF4C8" opacity=".12"/>`; }
+addY("cs_dawn", svg(480, 360, `<rect width="480" height="360" fill="url(#dw)"/>${rays}<circle cx="240" cy="250" r="70" fill="url(#sun)"/><circle cx="240" cy="250" r="34" fill="#FFF6D8"/>` +
+  `<path d="M0 250 L60 228 L120 244 L180 222 L240 240 L300 220 L370 242 L430 226 L480 238 L480 360 L0 360Z" fill="#3A2A3A"/>` +
+  `<path d="M0 280 h480 v80 h-480z" fill="#5A6A3A"/><path d="M220 280 L260 280 L360 360 L120 360Z" fill="#A08A6A"/>` +
+  [40, 90, 400, 440].map((x, i) => `<path d="M${x} 284 l-22 -40 l22 -60 l22 60z" fill="#2A3A2A"/>`).join(""),
+  vgrad("dw", "#4A6AA8", "#FFB070") + radial("sun", "#FFF6D0", "#FFC870", 0.95, 0)));
+let tend = "";
+for (let i = 0; i < 9; i++) { const x = 20 + i * 55; tend += `<path d="M${x} 360 q${-20 + (i % 3) * 20} -90 ${10 - (i % 2) * 30} -180 q10 -40 -10 -70" stroke="#2A0608" stroke-width="${10 - (i % 3) * 2}" fill="none" stroke-linecap="round"/>`; }
+addY("cs_dark", svg(480, 360, `<rect width="480" height="360" fill="url(#dk2)"/>${tend}<ellipse cx="240" cy="330" rx="200" ry="30" fill="#000" opacity=".6"/>`,
+  `<radialGradient id="dk2" cx=".5" cy=".35" r=".8"><stop offset="0" stop-color="#7A1A1E"/><stop offset=".6" stop-color="#2A0608"/><stop offset="1" stop-color="#050102"/></radialGradient>`));
+addY("cs_moon", svg(480, 360, `<rect width="480" height="360" fill="url(#bm)"/><circle cx="240" cy="140" r="110" fill="url(#bmg)"/><circle cx="240" cy="140" r="78" fill="#C8322A"/><circle cx="214" cy="118" r="14" fill="#A8221E"/><circle cx="262" cy="160" r="20" fill="#A8221E"/>` +
+  `<path d="M0 300 L50 260 L80 280 L130 240 L170 270 L200 250 L240 276 L290 244 L330 268 L380 236 L430 266 L480 250 L480 360 L0 360Z" fill="#050203"/>`,
+  vgrad("bm", "#140406", "#3A0A0C") + radial("bmg", "#FF5A3A", "#FF2A1A", 0.5, 0)));
+addY("cs_bars", svg(480, 360, `<rect width="480" height="38" fill="#000"/><rect y="322" width="480" height="38" fill="#000"/>`));
+const big = (t, c) => svg(460, 90, T(230, 64, 52, t, c, "middle", 'letter-spacing="2"', "Marker"));
+addY("cs_t_escaped", big("YOU ESCAPED!", "#FFE070"));
+addY("cs_t_dead", big("SACRIFICED", "#E85A4A"));
+addY("cs_t_killer", big("THE KILLER WINS", "#E85A4A"));
+addY("cs_t_survivors", big("DAYLIGHT!", "#FFE070"));
+const sub = (t, c = "#F4F1E6") => svg(460, 30, T(230, 22, 18, t, c));
+addY("cs_s_escaped", sub("You made it out alive!"));
+addY("cs_s_dead", sub("The darkness took you..."));
+addY("cs_s_kills", sub("Too many survivors were sacrificed."));
+addY("cs_s_time", sub("Time ran out - the exit gates are locked forever."));
+addY("cs_s_survivors", sub("The sun rises. The survivors win!"));
+addY("cs_skip", svg(200, 20, T(100, 15, 12, "Click or SPACE to skip", "#C8C2A8")));
+
 // index table for the code
 let ids = "// Generated by scripts/art.mjs: View costume numbers.\n";
 Y.forEach((n, i) => (ids += `export const C_${n.toUpperCase()} = ${idx + 1 + i};\n`));
@@ -724,18 +774,25 @@ out("Chat/anchor.svg", svg(4, 4, `<rect width="4" height="4" fill="#000" opacity
 // ---------------------------------------------------------------- Thumbnail (480 x 360 title card)
 const kb = killerBody(KILL[0], "front", "atk");
 const s1 = survivorBody(SURV[1], "back", "a"), s2 = survivorBody(SURV[6], "front", "scared"), s3 = survivorBody(SURV[8], "back", "b");
+let tstars = "";
+for (let i = 0; i < 60; i++) tstars += `<circle cx="${(rnd() * 480).toFixed(0)}" cy="${(rnd() * 200).toFixed(0)}" r="${(0.4 + rnd() * 0.9).toFixed(1)}" fill="#E8D8D8" opacity="${(0.25 + rnd() * 0.5).toFixed(2)}"/>`;
+const cornT = Array.from({ length: 40 }, (_, i) => `<path d="M${i * 12 + 4} 262 q${(i % 3) - 1} -30 ${(i % 2) * 3} -${44 + (i * 7) % 18}" stroke="#2A3A1E" stroke-width="3" fill="none"/>`).join("");
 out("Thumbnail/thumbnail.svg", svg(480, 360,
-  moonBg.replace('fill="#06080A"', 'fill="#0A0C10"') +
-  `<g opacity=".9"><path d="M300 236 h120 v-70 l-60 -40 l-60 40z" fill="#120C0C"/><rect x="318" y="182" width="16" height="20" fill="#F2C860" opacity=".8"/><rect x="384" y="182" width="16" height="20" fill="#F2C860" opacity=".5"/></g>` +
-  `<rect y="250" width="480" height="110" fill="url(#tg)"/>` +
-  `<g transform="translate(150 70) scale(1.55)">${kb}</g>` +
-  `<g transform="translate(-30 160) scale(1.15)">${s1}</g><g transform="translate(330 150) scale(1.1)">${s2}</g><g transform="translate(40 200) scale(0.9)">${s3}</g>` +
-  `<g transform="translate(372 180) scale(0.6)">${genSvg(3).replace(/<svg[^>]*>|<\/svg>/g, "")}</g>` +
-  `<text x="245" y="70" font-family="Marker" font-weight="bold" font-size="58" text-anchor="middle" fill="#000" opacity=".6">SURVIVE UNTIL</text>` +
-  `<text x="240" y="64" font-family="Marker" font-weight="bold" font-size="58" text-anchor="middle" fill="url(#ttl)" stroke="#120608" stroke-width="9" paint-order="stroke" stroke-linejoin="round">SURVIVE UNTIL</text>` +
-  `<text x="245" y="132" font-family="Marker" font-weight="bold" font-size="70" text-anchor="middle" fill="#000" opacity=".6">DAYLIGHT</text>` +
-  `<text x="240" y="126" font-family="Marker" font-weight="bold" font-size="70" text-anchor="middle" fill="url(#ttl)" stroke="#120608" stroke-width="10" paint-order="stroke" stroke-linejoin="round">DAYLIGHT</text>` +
+  `<rect width="480" height="360" fill="url(#tsky)"/>${tstars}<circle cx="240" cy="170" r="150" fill="url(#tmg)"/><circle cx="240" cy="170" r="96" fill="#B8282A"/><circle cx="212" cy="140" r="16" fill="#9A1E20"/><circle cx="270" cy="196" r="22" fill="#9A1E20"/><circle cx="262" cy="128" r="8" fill="#9A1E20"/>` +
+  `<path d="M0 250 L40 226 L90 240 L130 214 L180 236 L240 222 L300 238 L350 210 L410 236 L480 220 L480 360 L0 360Z" fill="#0A0606"/>${cornT}` +
+  `<rect y="258" width="480" height="102" fill="url(#tg)"/><rect y="240" width="480" height="50" fill="url(#tfog)"/>` +
+  `<g transform="translate(130 112) scale(1.38)">${kb}</g>` +
+  `<g transform="translate(-36 166) scale(1.15)">${s1}</g><g transform="translate(336 160) scale(1.1)">${s2}</g><g transform="translate(48 206) scale(0.85)">${s3}</g>` +
+  `<g transform="translate(384 196) scale(0.55)">${genSvg(3).replace(/<svg[^>]*>|<\/svg>/g, "")}</g>` +
+  `<g transform="translate(398 112) scale(0.75)"><path d="M70 156 L76 18 L84 18 L90 156Z" fill="#1A1A1E"/><path d="M76 20 h34 v8 h-26" fill="#2A2C30"/><path d="M104 28 v10 q0 14 -12 14 q-10 0 -10 -10 l6 -2 q0 5 4 5 q5 0 5 -7 v-10z" fill="#5A5E66"/></g>` +
+  `<text x="245" y="66" font-family="Marker" font-weight="bold" font-size="56" text-anchor="middle" fill="#000" opacity=".7">SURVIVE UNTIL</text>` +
+  `<text x="240" y="60" font-family="Marker" font-weight="bold" font-size="56" text-anchor="middle" fill="url(#ttl)" stroke="#120608" stroke-width="9" paint-order="stroke" stroke-linejoin="round">SURVIVE UNTIL</text>` +
+  `<text x="246" y="128" font-family="Marker" font-weight="bold" font-size="72" text-anchor="middle" fill="#000" opacity=".7">DAYLIGHT</text>` +
+  `<text x="240" y="122" font-family="Marker" font-weight="bold" font-size="72" text-anchor="middle" fill="url(#ttl)" stroke="#120608" stroke-width="10" paint-order="stroke" stroke-linejoin="round">DAYLIGHT</text>` +
+  `<text x="240" y="286" font-family="Sans Serif" font-weight="bold" font-size="15" text-anchor="middle" fill="#F4E8E0" stroke="#120608" stroke-width="4" paint-order="stroke" letter-spacing="2">1 KILLER  vs  4 SURVIVORS  -  SOLO OR ONLINE</text>` +
   `<rect x="150" y="296" width="180" height="34" rx="17" fill="#1A0E10" stroke="#F09A3A" stroke-width="3"/><text x="240" y="319" font-family="Sans Serif" font-weight="bold" font-size="17" text-anchor="middle" fill="#FFE8C8">CLICK TO PLAY</text>` +
   `<rect x="318" y="334" width="156" height="20" rx="10" fill="#4C97FF" stroke="#FFF" stroke-width="2"/><text x="396" y="348" font-family="Sans Serif" font-weight="bold" font-size="11" text-anchor="middle" fill="#FFF">Made with TextToScratch</text>`,
-  moonDefs + titleDefs + vgrad("tg", "#0A0E0A", "#1E2A1E") + grad("gb", "#8A7E5E", "#4A4230") + radial("gl", "#FFF6C0", "#FFE070", 0.8, 0)));
+  titleDefs + vgrad("tsky", "#05030A", "#3A0E14") + vgrad("tg", "#0E0A0A", "#241A16") + radial("tmg", "#FF4A2A", "#FF2A1A", 0.45, 0) +
+  `<linearGradient id="tfog" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#6A4448" stop-opacity="0"/><stop offset=".5" stop-color="#6A4448" stop-opacity=".45"/><stop offset="1" stop-color="#6A4448" stop-opacity="0"/></linearGradient>` +
+  grad("gb", "#8A7E5E", "#4A4230") + radial("gl", "#FFF6C0", "#FFE070", 0.8, 0)));
 console.log(`walls: ${idx}, billboards/hud: ${Y.length}`);

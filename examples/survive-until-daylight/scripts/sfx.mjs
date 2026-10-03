@@ -103,6 +103,10 @@ S.crows = mix(...[0, 0.25, 0.55, 0.7].map((d, i) => delay(voice(0.28, 900 - i * 
 S.dash = noise(0.4, 0.15, (t) => 5000 * Math.exp(-t * 6) + 400, 0.8, 0.01);
 S.click = tone(0.06, 1200, 900, 0.02, 0.4, "square");
 S.vault = mix(noise(0.25, 0.06, () => 1500, 0.6), delay(thump(90, 0.2, 0.6), 0.18));
+// killer laugh: three low "ha"s
+S.laugh = softclip(mix(...[0, 0.32, 0.62, 0.95].map((d, i) => delay(voice(0.26, 150 - i * 6, 120 - i * 6, 0.9, [[650, 4], [1050, 5], [2400, 7]], 0.04), d)), noise(1.3, 0.8, () => 300, 0.2)));
+S.tick = tone(0.08, 1500, 1500, 0.03, 0.4, "square");
+S.lock = softclip(mix(thump(70, 0.6, 1), noise(0.5, 0.1, () => 3000, 0.8), delay(tone(0.8, 300, 290, 0.4, 0.4, "tri"), 0.08)));
 for (const [k, v] of Object.entries(S)) put("View", k, v);
 
 // Stage: night ambience (wind and crickets), loops
