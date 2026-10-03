@@ -58,10 +58,22 @@
         check();
       }));
       fig.append(frame);
-      if (state.players > 1) fig.append(Object.assign(document.createElement("figcaption"), { textContent: "Player " + (i + 1) + " (click to control)" }));
+      if (state.players > 1) {
+        // per-player flag / stop / rejoin, next to the global ones in the toolbar
+        const cap = document.createElement("figcaption");
+        const btn = (title, html, fn) => { const b = document.createElement("button"); b.title = title; b.innerHTML = html; b.onclick = fn; cap.append(b); };
+        btn("Green flag (this player)", $("flag").innerHTML, () => f.api && f.api.flag());
+        btn("Stop (this player)", $("stop").innerHTML, () => f.api && f.api.stop());
+        btn("Rejoin: reload only this player, like a late join", "⟳", () => f.api && project && f.api.load(project.slice(0), true));
+        cap.append("Player " + (i + 1));
+        fig.append(cap);
+      }
+      fig.onmousedown = () => setActive(i);
+      f.fig = fig;
       box.append(fig);
       return f;
     });
+    setActive(0);
     layout();
     const these = frames;
     setTimeout(() => { if (frames === these && frames.some((f) => !f.api)) window.ttsError("the player frame did not start"); }, 30000);
@@ -71,13 +83,21 @@
     });
   }
 
+  // keys typed on the toolbar go to the player whose stage was clicked last (highlighted)
+  let activePlayer = 0;
+  function setActive(i) {
+    activePlayer = i;
+    frames.forEach((f) => f.fig.classList.toggle("active", frames.length > 1 && f.index === i));
+  }
+  window.ttsActive = setActive;
+
   function layout() {
     const box = $("frames");
     const full = document.fullscreenElement === box;
     let scale = SIZES[state.size][1];
     box.classList.toggle("fit", !scale || full);
     if (!scale || full) {
-      const w = (box.clientWidth - 24 - 12 * (frames.length - 1)) / frames.length, h = box.clientHeight - 24 - (frames.length > 1 ? 20 : 0);
+      const w = (box.clientWidth - 24 - 12 * (frames.length - 1)) / frames.length, h = box.clientHeight - 24 - (frames.length > 1 ? 34 : 0);
       scale = Math.max(0.25, Math.min(w / 480, h / 360));
     }
     for (const f of frames) { f.frame.style.width = 480 * scale + "px"; f.frame.style.height = 360 * scale + "px"; }
@@ -128,11 +148,12 @@
 
   $("flag").onclick = () => (pending ? load(pending, true) : frames.forEach((f) => f.api && f.api.flag()));
   $("stop").onclick = () => frames.forEach((f) => f.api && f.api.stop());
-  // keys pressed while the toolbar has focus go to player 1
+  // keys pressed while the toolbar has focus go to the active player
   for (const [type, down] of [["keydown", true], ["keyup", false]])
     window.addEventListener(type, (e) => {
-      if (e.target.tagName === "INPUT" || !frames[0] || !frames[0].api) return;
-      frames[0].api.key(e.key, down);
+      const f = frames[activePlayer];
+      if (e.target.tagName === "INPUT" || !f || !f.api) return;
+      f.api.key(e.key, down);
       if ([" ", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) e.preventDefault();
     });
   $("turbo").checked = state.turbo;
@@ -143,12 +164,14 @@
     $(id).onchange = (e) => { state[id] = e.target.checked; save(); post({ type: "setting", key: id, value: state[id] }); };
   }
   $("size").onclick = () => { state.size = (state.size + 1) % SIZES.length; layout(); save(); };
-  $("players").textContent = state.players + (state.players === 1 ? " player" : " players");
-  $("players").classList.toggle("on", state.players > 1);
-  $("players").onclick = () => {
-    state.players = state.players === 1 ? 2 : 1;
+  const playersLabel = () => {
     $("players").textContent = state.players + (state.players === 1 ? " player" : " players");
     $("players").classList.toggle("on", state.players > 1);
+  };
+  playersLabel();
+  $("players").onclick = () => {
+    state.players = (state.players % 4) + 1; // 1 -> 2 -> 3 -> 4 -> 1
+    playersLabel();
     save();
     makeFrames();
     if (project) load(project, true);
@@ -167,11 +190,13 @@
 
   makeFrames();
   const params = new URLSearchParams(location.search);
-  if (params.get("players")) { state.players = Number(params.get("players")) || 1; $("players").textContent = state.players + " players"; makeFrames(); }
+  if (params.get("players")) { state.players = Math.min(4, Number(params.get("players")) || 1); playersLabel(); makeFrames(); }
   if (vscode) post({ type: "hello" });
   else if (params.get("project"))
     fetch(params.get("project") + "?v=" + Date.now()).then((r) => r.arrayBuffer()).then((b) => load(b, !params.has("noflag")));
-  window.ttsViewer = { load, frames: () => frames, running };
+  // Show Blocks: the extension opens its panel; as a plain page, open blocks.html for the same project
+  $("blocks").onclick = () => (vscode ? post({ type: "showBlocks" }) : window.open(base + "blocks.html?project=" + encodeURIComponent(params.get("project") || "")));
+  window.ttsViewer = { load, frames: () => frames, running, active: () => activePlayer };
 
   // ---------------- one player (inside an iframe) ----------------
   function player() {
@@ -249,7 +274,7 @@
         vm.postIOData("mouse", { x: e.clientX - r.left, y: e.clientY - r.top, canvasWidth: r.width, canvasHeight: r.height, isDown });
       };
       canvas.addEventListener("mousemove", (e) => mouse(e));
-      canvas.addEventListener("mousedown", (e) => { canvas.focus(); mouse(e, true); e.preventDefault(); });
+      canvas.addEventListener("mousedown", (e) => { canvas.focus(); window.parent.ttsActive && window.parent.ttsActive(api.index); mouse(e, true); e.preventDefault(); });
       window.addEventListener("mouseup", (e) => mouse(e, false));
       const key = (e, isDown) => {
         if (e.target && e.target.id === "askin") return;

@@ -438,7 +438,13 @@ export class Target {
   private inp(op: Op, slot: Slot): any[] {
     if (slot === "b") {
       if (op.t === "blk") return [2, op.id];
-      if (op.t === "var") return [2, this.mk(op.k === 12 ? "data_variable" : "data_listcontents", { f: { [op.k === 12 ? "VARIABLE" : "LIST"]: [op.name, op.vid] } })];
+      if (op.t === "var") {
+        // A round variable can't sit in a hexagon slot in the Scratch editor: spell out Scratch's own truthiness,
+        // not <(x = 0) or (x = "false") or (x = "")>, which is what the VM does with the bare variable.
+        const eq = (v: string | number) => this.B(this.mk("operator_equals", { in: { OPERAND1: this.inp(op, "s"), OPERAND2: this.inp({ t: "lit", v }, "s") } }));
+        const or = (a: Op, b: Op) => this.B(this.mk("operator_or", { in: { OPERAND1: this.inp(a, "b"), OPERAND2: this.inp(b, "b") } }));
+        return [2, this.mk("operator_not", { in: { OPERAND: this.inp(or(or(eq(0), eq("false")), eq("")), "b") } })];
+      }
       return [2, this.mk(op.v ? "operator_not" : "operator_and")]; // not(<>) = true, <> and <> = false
     }
     if (slot === "msg") {

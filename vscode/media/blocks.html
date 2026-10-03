@@ -1,0 +1,33 @@
+<!doctype html>
+<!-- TextToScratch blocks view: the compiled Scratch blocks of one sprite, read-only, rendered by scratch-blocks.
+     Runs as the VS Code webview (the extension swaps 'self' for the webview source) and as a plain page:
+     /vscode/media/blocks.html?project=/examples/platformer/dist/platformer.sb3[&target=Player] -->
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; media-src 'self' blob: data:; font-src 'self' data:; connect-src 'self' blob: data:;">
+  <link rel="stylesheet" href="viewer.css">
+  <style>
+    #workspace { flex: 1; position: relative; background: #f9f9f9; }
+    #bar select { font: inherit; color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 3px 6px; background: #fff; }
+    .blocklyMainBackground { stroke: none; }
+  </style>
+  <title>TextToScratch Blocks</title>
+</head>
+<body>
+  <header id="bar">
+    <select id="target" title="Sprite"></select>
+    <span class="spacer"></span>
+    <button id="out" class="text" title="Zoom out">−</button>
+    <button id="reset" class="text" title="Default zoom">=</button>
+    <button id="in" class="text" title="Zoom in">+</button>
+    <button id="cleanup" class="text" title="Clean up blocks">Clean up</button>
+  </header>
+  <main id="workspace"></main>
+  <footer id="status">Waiting for a build…</footer>
+  <script src="vendor/scratch-vm.js"></script>
+  <script src="vendor/scratch-storage.js"></script>
+  <script src="vendor/scratch-blocks.js"></script>
+  <script src="blocks.js"></script>
+</body>
+</html>

@@ -47,7 +47,12 @@ When no project is open, the TextToScratch sidebar has the same buttons. Any fol
 - Stage size options (small, normal, large, fit) and full screen.
 - Variable and list monitors, keyboard and mouse input, `askAndWait`, sounds, and bitmap and SVG costumes.
 - **Auto-reload**: the game reloads after each save. With **Keep running** on, it presses the green flag again if the game was running.
-- **2 players**: two copies of the game side by side, sharing cloud variables through a simulated local server. Use it to test [multiplayer](./engine/multiplayer.md) games. Click a stage to control that player.
+- **Players** (1 → 2 → 3 → 4): copies of the game side by side, sharing cloud variables through a simulated local server. Use it to test [multiplayer](./engine/multiplayer.md) games. Each player has its own green flag, stop, and ⟳ *rejoin* button, which reloads only that player so you can test someone joining late. The toolbar flag and stop control every player. Click a stage to control that player; it gets a purple outline, and keys typed on the toolbar go to it too.
+- **Blocks** opens the blocks view.
+
+## Blocks view
+
+**TextToScratch: Show Blocks** (the structure icon in the editor title bar of a `.ts` file, or **Blocks** in the viewer) shows the compiled Scratch blocks of the sprite you're editing, beside the code, drawn by the same `scratch-blocks` library as the Scratch editor. It's read-only. It follows the active editor, refreshes after each build, and has a sprite menu, zoom and **Clean up**. Click a script to jump to its event or function in the `.ts` file.
 
 ## Sharing
 

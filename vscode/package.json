@@ -20,6 +20,7 @@
       { "command": "texttoscratch.build", "title": "Build", "category": "TextToScratch", "icon": "$(package)" },
       { "command": "texttoscratch.run", "title": "Run in Viewer", "category": "TextToScratch", "icon": "$(play)" },
       { "command": "texttoscratch.openViewer", "title": "Open Game Viewer", "category": "TextToScratch", "icon": "$(preview)" },
+      { "command": "texttoscratch.showBlocks", "title": "Show Blocks", "category": "TextToScratch", "icon": "$(symbol-structure)" },
       { "command": "texttoscratch.openInScratch", "title": "Open in Scratch / TurboWarp", "category": "TextToScratch", "icon": "$(link-external)" },
       { "command": "texttoscratch.exportSb3", "title": "Export .sb3", "category": "TextToScratch", "icon": "$(save-as)" },
       { "command": "texttoscratch.addSprite", "title": "Add Sprite", "category": "TextToScratch", "icon": "$(new-file)" },
@@ -51,7 +52,8 @@
         { "command": "texttoscratch.importSb3", "when": "view == texttoscratch.sprites" }
       ],
       "editor/title": [
-        { "command": "texttoscratch.run", "when": "texttoscratch.hasProject && resourceExtname == .ts", "group": "navigation" }
+        { "command": "texttoscratch.run", "when": "texttoscratch.hasProject && resourceExtname == .ts", "group": "navigation" },
+        { "command": "texttoscratch.showBlocks", "when": "texttoscratch.hasProject && resourceExtname == .ts", "group": "navigation" }
       ]
     },
     "snippets": [{ "language": "typescript", "path": "./snippets/tts.code-snippets" }],

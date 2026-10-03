@@ -5,6 +5,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { buildDir, DirBuild, fetchScratchProject, importSb3, init, libs, NEW_SPRITE, readDir, scaffold, scratchId, ensureTsconfig, updateTypings } from "../../src/node";
 import { Libs, SOUND_EXT } from "../../src/compiler";
+import ts from "typescript";
 
 let ext: vscode.ExtensionContext;
 let L: Libs;
@@ -37,6 +38,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Api> {
   });
   reg("run", async () => { const dir = await pickProject(); if (dir) { Viewer.show(dir); await runBuild(dir, "run"); } });
   reg("openViewer", async () => { const dir = await pickProject(); if (dir) { Viewer.show(dir); await runBuild(dir, "build"); } });
+  reg("showBlocks", showBlocks);
   reg("openInScratch", openInScratch);
   reg("exportSb3", exportSb3);
   reg("addSprite", addSprite);
@@ -47,7 +49,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<Api> {
     diags, importDiags, statusItem, output,
     vscode.window.registerTreeDataProvider("texttoscratch.sprites", tree),
     vscode.window.registerWebviewPanelSerializer(Viewer.type, { deserializeWebviewPanel: async (panel) => Viewer.revive(panel) }),
-    vscode.window.onDidChangeActiveTextEditor(() => setActive()),
+    vscode.window.registerWebviewPanelSerializer(BlocksView.type, { deserializeWebviewPanel: async (panel) => BlocksView.revive(panel) }),
+    vscode.window.onDidChangeActiveTextEditor(() => { setActive(); BlocksView.follow(); }),
     vscode.workspace.onDidChangeWorkspaceFolders(() => findProjects()),
     vscode.workspace.onDidSaveTextDocument(onSave),
     watcher(),
@@ -163,6 +166,7 @@ async function runBuild(dir: string | undefined, reason: "save" | "run" | "build
     if (res.ok) v.post({ type: "load", bytes: res.bytes, reason, flag: reason !== "build" });
     else v.post({ type: "errors", messages: res.diagnostics.map((d) => `${path.relative(dir, d.path)}:${d.line}:${d.col}  ${d.message}`) });
   }
+  if (res.ok && BlocksView.current && same(BlocksView.current.dir, dir)) BlocksView.current.post({ type: "load", bytes: res.bytes });
   return res;
 }
 
@@ -192,20 +196,24 @@ function updateStatus() {
 
 // ---------------- viewer ----------------
 
+/** A media/*.html page as webview HTML: 'self' becomes the webview source, local src/href become webview URIs. */
+function webviewHtml(panel: vscode.WebviewPanel, file: string) {
+  const media = vscode.Uri.joinPath(ext.extensionUri, "media");
+  panel.webview.options = { enableScripts: true, localResourceRoots: [media] };
+  panel.iconPath = vscode.Uri.joinPath(media, "icon128.png");
+  panel.webview.html = fs.readFileSync(path.join(ext.extensionPath, "media", file), "utf8")
+    .replace(/'self'/g, panel.webview.cspSource)
+    .replace(/(src|href)="([\w./-]+)"/g, (_, a, f) => `${a}="${panel.webview.asWebviewUri(vscode.Uri.joinPath(media, f))}"`);
+}
+
 class Viewer {
   static type = "texttoscratch.viewer";
   static current: Viewer | undefined;
   constructor(public panel: vscode.WebviewPanel, public dir: string) {
-    const media = vscode.Uri.joinPath(ext.extensionUri, "media");
-    panel.webview.options = { enableScripts: true, localResourceRoots: [media] };
-    panel.iconPath = vscode.Uri.joinPath(media, "icon128.png");
-    const uri = (f: string) => panel.webview.asWebviewUri(vscode.Uri.joinPath(media, f)).toString();
-    panel.webview.html = fs.readFileSync(path.join(ext.extensionPath, "media", "viewer.html"), "utf8")
-      .replace(/'self'/g, panel.webview.cspSource)
-      .replace('href="viewer.css"', `href="${uri("viewer.css")}"`)
-      .replace('src="viewer.js"', `src="${uri("viewer.js")}"`);
+    webviewHtml(panel, "viewer.html");
     panel.webview.onDidReceiveMessage((m) => {
       viewerMessages.push(m);
+      if (m.type === "showBlocks") showBlocks();
       if (m.type === "setting") cfg().update(m.key === "autoreload" ? "autoReload" : "keepRunning", m.value, vscode.ConfigurationTarget.Global);
       if (m.type === "error") output.appendLine("Viewer: " + m.message);
     });
@@ -227,6 +235,82 @@ class Viewer {
     Viewer.current = new Viewer(panel, active);
     runBuild(active, "build");
   }
+}
+
+// ---------------- blocks view ----------------
+
+/** The sprite of a .ts file in a project's src/ (Stage.ts -> "Stage"), if any. */
+function spriteOf(file: string | undefined, dir: string) {
+  if (!file || !file.endsWith(".ts") || !same(path.dirname(file), path.join(dir, "src"))) return;
+  return path.basename(file, ".ts");
+}
+
+/** Lines of a sprite file's top-level scripts in compile order: the compiler stacks hats and functions top to bottom. */
+function scriptLines(file: string) {
+  const src = ts.createSourceFile(file, fs.readFileSync(file, "utf8"), ts.ScriptTarget.Latest, true);
+  return src.statements
+    .filter((st) => (ts.isFunctionDeclaration(st) && st.body) || (ts.isExpressionStatement(st) && ts.isCallExpression(st.expression)))
+    .map((st) => src.getLineAndCharacterOfPosition(st.getStart()).line);
+}
+
+class BlocksView {
+  static type = "texttoscratch.blocks";
+  static current: BlocksView | undefined;
+  target: string | undefined;
+  constructor(public panel: vscode.WebviewPanel, public dir: string) {
+    webviewHtml(panel, "blocks.html");
+    panel.webview.onDidReceiveMessage((m) => {
+      viewerMessages.push(m);
+      if (m.type === "hello") this.load();
+      if (m.type === "error") output.appendLine("Blocks: " + m.message);
+      if (m.type === "reveal") this.reveal(m.target, m.index);
+    });
+    panel.onDidDispose(() => { if (BlocksView.current === this) BlocksView.current = undefined; });
+  }
+  post(m: any) { this.panel.webview.postMessage(m); }
+  load() {
+    const res = lastBuild.get(this.dir);
+    if (res?.ok) this.post({ type: "load", bytes: res.bytes, target: this.target });
+    else runBuild(this.dir, "build");
+  }
+  async reveal(target: string, index: number) {
+    const file = path.join(this.dir, "src", target + ".ts");
+    const line = fs.existsSync(file) ? scriptLines(file)[index] : undefined;
+    if (line === undefined) return;
+    const doc = await vscode.workspace.openTextDocument(file);
+    const editor = await vscode.window.showTextDocument(doc, { viewColumn: vscode.window.visibleTextEditors.find((e) => same(e.document.uri.fsPath, file))?.viewColumn ?? vscode.ViewColumn.One });
+    editor.selection = new vscode.Selection(line, 0, line, 0);
+    editor.revealRange(new vscode.Range(line, 0, line, 0), vscode.TextEditorRevealType.InCenterIfOutsideViewport);
+  }
+  /** Follow the active editor's sprite. */
+  static follow() {
+    const b = BlocksView.current;
+    const name = b && spriteOf(vscode.window.activeTextEditor?.document.uri.fsPath, b.dir);
+    if (b && name && name !== b.target) b.post({ type: "target", target: (b.target = name) });
+  }
+  static show(dir: string) {
+    let b = BlocksView.current;
+    if (b && !same(b.dir, dir)) { b.dir = dir; b.target = undefined; }
+    if (!b) {
+      const panel = vscode.window.createWebviewPanel(BlocksView.type, "Blocks", { viewColumn: vscode.ViewColumn.Beside, preserveFocus: true }, { enableScripts: true, retainContextWhenHidden: true });
+      b = BlocksView.current = new BlocksView(panel, dir); // loads on the page's "hello"
+    } else {
+      b.panel.reveal(vscode.ViewColumn.Beside, true);
+      b.load();
+    }
+    b.target = spriteOf(vscode.window.activeTextEditor?.document.uri.fsPath, dir) ?? b.target;
+    b.panel.title = "Blocks: " + path.basename(dir);
+    return b;
+  }
+  static revive(panel: vscode.WebviewPanel) {
+    if (!active) return panel.dispose();
+    BlocksView.current = new BlocksView(panel, active);
+  }
+}
+
+async function showBlocks() {
+  const dir = await pickProject();
+  if (dir) BlocksView.show(dir);
 }
 
 // ---------------- commands ----------------

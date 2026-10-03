@@ -1,5 +1,5 @@
 // Builds the VS Code extension: dist/extension.js (host, with the TextToScratch compiler bundled),
-// media/vendor/ (scratch-vm, scratch-render, scratch-storage, scratch-svg-renderer, scratch-audio for the viewer),
+// media/vendor/ (scratch-vm, scratch-render, scratch-storage, scratch-svg-renderer, scratch-audio for the viewer; scratch-blocks for the blocks view),
 // lib/ (typings) and templates/ (examples as New Project templates).
 import { build } from "esbuild";
 import fs from "node:fs";
@@ -37,6 +37,10 @@ await build({
 const vendor = at("media/vendor");
 for (const p of ["scratch-vm/dist/web/scratch-vm.js", "scratch-render/dist/web/scratch-render.js", "scratch-storage/dist/web/scratch-storage.js", "scratch-svg-renderer/dist/web/scratch-svg-renderer.js"])
   fs.copyFileSync(path.join(root, "node_modules", p), path.join(vendor, path.basename(p)));
+// scratch-blocks (vertical build, sets window.Blockly) and its media/ (sprites, icons) for the blocks view
+fs.copyFileSync(path.join(root, "node_modules/scratch-blocks/dist/web/vertical.js"), path.join(vendor, "scratch-blocks.js"));
+fs.rmSync(path.join(vendor, "blocks-media"), { recursive: true, force: true });
+fs.cpSync(path.join(root, "node_modules/scratch-blocks/media"), path.join(vendor, "blocks-media"), { recursive: true });
 
 fs.rmSync(at("lib"), { recursive: true, force: true });
 fs.cpSync(path.join(root, "lib"), at("lib"), { recursive: true });

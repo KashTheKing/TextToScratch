@@ -180,3 +180,22 @@ test("valueOf() reads another sprite's variable (not Object.prototype.valueOf)",
   });
   assert.equal(Number(r.g("v")), 7);
 });
+
+test("variables used as conditions follow Scratch truthiness and never sit in a hexagon slot", async () => {
+  const src = `export const out = { r: "" };
+let on = false; let n = 0; let s = "";
+whenFlag(() => {
+  out.r = "";
+  on = true; if (on) out.r = out.r + "a"; if (!on) out.r = out.r + "X";
+  on = false; if (!on) out.r = out.r + "b";
+  n = 2; if (n) out.r = out.r + "c"; n = 0; if (!n) out.r = out.r + "d";
+  s = "hi"; if (s) out.r = out.r + "e"; s = ""; if (!s) out.r = out.r + "f";
+});`;
+  const r = await run({ "Stage.ts": src });
+  assert.equal(r.g("r"), "abcdef");
+  const res = build({ sources: { "Stage.ts": src }, base: emptyProject() }, libs);
+  const blocks: any = res.sb3!.json.targets[0].blocks;
+  const hex = ["CONDITION", "OPERAND"];
+  for (const b of Object.values(blocks) as any[])
+    for (const k of hex) if (b.inputs?.[k]) assert.notEqual(blocks[b.inputs[k][1]]?.opcode, "data_variable", `${b.opcode}.${k}`);
+});

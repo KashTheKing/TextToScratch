@@ -72,6 +72,16 @@ exports.run = async () => {
   await sleep(2500);
   shot("viewer");
 
+  // Show Blocks for the active sprite file: scratch-blocks renders the compiled scripts and reports the count
+  await vscode.window.showTextDocument(vscode.Uri.file(path.join(dir, "src", "Player.ts")), { viewColumn: vscode.ViewColumn.One });
+  await vscode.commands.executeCommand("texttoscratch.showBlocks");
+  await until("blocks rendered", () => api.viewerMessages.some((m) => m.type === "rendered" && m.target === "Player"), 60000);
+  const rendered = api.viewerMessages.find((m) => m.type === "rendered" && m.target === "Player");
+  assert.ok(rendered.blocks > 50 && rendered.scripts > 0, JSON.stringify(rendered));
+  console.log("blocks:", JSON.stringify(rendered));
+  await sleep(1500);
+  shot("blocks");
+
   // Import a non-TextToScratch .sb3 (source comments stripped) into the workspace
   const JSZip = require(path.join(__dirname, "..", "..", "node_modules", "jszip"));
   const zip = await JSZip.loadAsync(fs.readFileSync(path.join(ws, "burger.sb3")));
