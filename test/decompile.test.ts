@@ -212,3 +212,18 @@ test("unknown hats, loose stacks and odd names never crash", () => {
   const res = build({ sources: d.sources, base: sb3 }, libs);
   assert.deepEqual(res.diagnostics, []);
 });
+
+test("multi-line comments with any line ending stay comments", () => {
+  const { all, B, seq } = blocks();
+  seq(0, B("event_whenflagclicked"), B("looks_nextcostume"));
+  const sb3 = emptyProject();
+  const s = newSprite("Commented", 1);
+  s.target.blocks = all;
+  const hat = Object.keys(all).find((id) => (all as any)[id].opcode === "event_whenflagclicked")!;
+  // Scratch 2 projects use \r line breaks in comments
+  s.target.comments = { c1: { blockId: hat, x: 0, y: 0, width: 200, height: 200, minimized: false, text: "first\rsecond line\r\nthird\nfourth" } } as any;
+  sb3.json.targets.push(s.target);
+  const d = decompile(sb3.json);
+  for (const l of ["first", "second line", "third", "fourth"]) assert.match(d.sources["Commented.ts"], new RegExp(`// ${l}$`, "m"));
+  assert.deepEqual(build({ sources: d.sources, base: sb3 }, libs).diagnostics, []);
+});

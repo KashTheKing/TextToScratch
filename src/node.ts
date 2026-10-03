@@ -89,7 +89,7 @@ export function scaffold(dir: string) {
   writeNew(path.join(dir, "package.json"), JSON.stringify({
     name, private: true,
     scripts: { build: "tts build", watch: "tts watch" },
-    devDependencies: { texttoscratch: "github:KashTheKing/TextToScratch" },
+    devDependencies: { texttoscratch: "github:TextToScratch/TextToScratch" },
   }, null, 2) + "\n");
 }
 

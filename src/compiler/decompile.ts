@@ -119,7 +119,7 @@ class Dec {
   constructor(public p: Proj, public t: any, public file: string) {
     this.blocks = t.blocks ?? {};
     for (const c of Object.values(t.comments ?? {}) as any[])
-      if (c?.blockId && typeof c.text === "string") this.comments.set(c.blockId, [...(this.comments.get(c.blockId) ?? []), ...c.text.split("\n")]);
+      if (c?.blockId && typeof c.text === "string") this.comments.set(c.blockId, [...(this.comments.get(c.blockId) ?? []), ...c.text.split(/\r\n|\r|\n/)]);
   }
 
   warn(msg: string, needle?: string) { if (!this.quiet) this.warns.push({ msg, needle }); }
