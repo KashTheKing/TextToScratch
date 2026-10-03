@@ -6,7 +6,6 @@ import path from "node:path";
 import { buildDir, DirBuild, fetchScratchProject, importSb3, init, libs, NEW_SPRITE, readDir, scaffold, scratchId, ensureTsconfig, updateTypings } from "../../src/node";
 import { Libs, SOUND_EXT } from "../../src/compiler";
 
-const DOCS = "https://github.com/TextToScratch/TextToScratch/blob/main/website/docs/vscode.md";
 let ext: vscode.ExtensionContext;
 let L: Libs;
 let projects: string[] = [];
@@ -42,7 +41,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<Api> {
   reg("exportSb3", exportSb3);
   reg("addSprite", addSprite);
   reg("refresh", () => findProjects());
-  reg("openDocs", () => vscode.env.openExternal(vscode.Uri.parse(DOCS)));
+  // bundled Markdown docs, so everything works without the website
+  reg("openDocs", () => vscode.commands.executeCommand("markdown.showPreview", vscode.Uri.joinPath(context.extensionUri, "docs", "intro.md")));
   context.subscriptions.push(
     diags, importDiags, statusItem, output,
     vscode.window.registerTreeDataProvider("texttoscratch.sprites", tree),

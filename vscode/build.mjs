@@ -48,3 +48,7 @@ for (const ex of fs.readdirSync(path.join(root, "examples")))
     fs.cpSync(path.join(root, "examples", ex, "src"), at("templates", ex, "src"), { recursive: true });
 
 console.log("Built vscode/");
+
+// docs/ (the website's Markdown docs, opened in VS Code's Markdown preview: no website needed)
+fs.rmSync(at("docs"), { recursive: true, force: true });
+fs.cpSync(path.join(root, "website/docs"), at("docs"), { recursive: true });

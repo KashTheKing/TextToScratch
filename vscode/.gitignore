@@ -5,3 +5,4 @@ templates/
 media/vendor/
 *.vsix
 .vscode-test/
+docs/
